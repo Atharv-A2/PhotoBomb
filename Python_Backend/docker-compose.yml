@@ -1,0 +1,36 @@
+services:
+
+  api:
+    build: .
+    container_name: media-api
+    env_file:
+      - .env
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+      - ./storage:/app/storage
+    depends_on:
+      - postgres
+      - redis
+
+  postgres:
+    image: postgres:17
+    container_name: media-postgres
+    environment:
+      POSTGRES_DB: media_platform
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  redis:
+    image: redis:8
+    container_name: media-redis
+    ports:
+      - "6379:6379"
+
+volumes:
+  postgres_data:
