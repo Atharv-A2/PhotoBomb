@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     debug: bool = True
     api_v1_prefix: str = "/api/v1"
 
-    host: str = "0.0.0.0"
+    host: str = "127.0.0.1"
     port: int = 8000
 
     database_url: str
@@ -31,6 +31,9 @@ class Settings(BaseSettings):
     thumbnail_storage_path: Path
 
     log_level: str = "INFO"
+
+    access_token_expire_minutes: int = 15
+    refresh_token_expire_days: int = 30
 
     model_config = SettingsConfigDict(
         env_file=".env",
