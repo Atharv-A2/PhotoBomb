@@ -45,3 +45,29 @@ class MediaRepository:
         return (
             result.scalar_one_or_none()
         )
+    
+
+    async def update_metadata(
+        self,
+        media,
+        metadata: dict,
+    ):
+        media.width = metadata.get(
+            "width"
+        )
+
+        media.height = metadata.get(
+            "height"
+        )
+
+        media.duration = metadata.get(
+            "duration"
+        )
+
+        media.capture_time = (
+            metadata.get(
+                "capture_time"
+            )
+        )
+
+        await self.session.flush()

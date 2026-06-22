@@ -52,3 +52,5 @@ mypy
 python-telegram-bot
 
 bcrypt==3.2.2
+
+ffmpeg-python
