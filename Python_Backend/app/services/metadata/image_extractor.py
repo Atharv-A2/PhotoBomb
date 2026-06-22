@@ -1,8 +1,9 @@
+import json
+import subprocess
 from datetime import datetime
 from pathlib import Path
 
 from PIL import Image
-from PIL.ExifTags import TAGS
 
 
 class ImageMetadataExtractor:
@@ -11,42 +12,15 @@ class ImageMetadataExtractor:
         self,
         path: Path,
     ):
-        image = Image.open(
-            path
+        image = Image.open(path)
+
+        width, height = image.size
+
+        capture_time = (
+            self._extract_capture_time(
+                path
+            )
         )
-
-        width, height = (
-            image.size
-        )
-
-        capture_time = None
-
-        exif = image.getexif()
-
-        if exif:
-            for tag_id, value in (
-                exif.items()
-            ):
-                tag = TAGS.get(
-                    tag_id,
-                    tag_id,
-                )
-
-                if (
-                    tag
-                    == "DateTimeOriginal"
-                ):
-                    try:
-                        capture_time = (
-                            datetime.strptime(
-                                value,
-                                "%Y:%m:%d %H:%M:%S",
-                            )
-                        )
-                    except Exception:
-                        pass
-
-                    break
 
         return {
             "width": width,
@@ -54,3 +28,51 @@ class ImageMetadataExtractor:
             "capture_time":
                 capture_time,
         }
+
+    def _extract_capture_time(
+        self,
+        path: Path,
+    ):
+        try:
+            result = subprocess.run(
+                [
+                    "exiftool",
+                    "-json",
+                    str(path),
+                ],
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+
+            metadata = json.loads(
+                result.stdout
+            )[0]
+
+            candidates = [
+                "DateTimeOriginal",
+                "CreateDate",
+                "DateTimeDigitized",
+                "ModifyDate",
+            ]
+
+            for field in candidates:
+                value = metadata.get(
+                    field
+                )
+
+                if not value:
+                    continue
+
+                try:
+                    return datetime.strptime(
+                        value,
+                        "%Y:%m:%d %H:%M:%S",
+                    )
+                except ValueError:
+                    pass
+
+        except Exception:
+            pass
+
+        return None

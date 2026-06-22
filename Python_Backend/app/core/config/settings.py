@@ -45,6 +45,10 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
+    ffmpeg_binary: str = "ffmpeg"
+    ffprobe_binary: str = "ffprobe"
+    exiftool_binary: str = "exiftool"
+
 
 @lru_cache
 def get_settings() -> Settings:
