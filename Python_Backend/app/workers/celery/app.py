@@ -1,14 +1,24 @@
 from celery import Celery
 
+from app.core.config.settings import (
+    get_settings,
+)
+
+settings = get_settings()
+
 celery_app = Celery(
     "photobomb",
-    broker="redis://localhost:6379/0",
-    backend="redis://localhost:6379/0",
+    broker=settings.redis_url,
+    backend=settings.redis_url,
 )
 
 celery_app.conf.update(
-    broker_transport_options={
-        "socket_connect_timeout": 10,
-        "retry_on_timeout": True,
-    },
+    task_serializer="json",
+    accept_content=["json"],
+    result_serializer="json",
+    timezone="UTC",
+    enable_utc=True,
+    imports=(
+        "app.workers.tasks.media_processing",
+    ),
 )

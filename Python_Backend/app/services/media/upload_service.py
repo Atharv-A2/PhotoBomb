@@ -47,6 +47,9 @@ from app.services.media.storage_service import (
 from app.utils.file_utils import (
     build_temp_path,
 )
+from app.workers.tasks.media_processing import (
+    process_media,
+)
 
 settings = get_settings()
 
@@ -200,16 +203,11 @@ class UploadService:
                 extension,
             )
         )
-        print(settings.temp_storage_path)
-        print(temp_path)
-        print(temp_path.resolve())
 
         await self.storage.save(
             file,
             temp_path,
         )
-        print("exists:", temp_path.exists())
-        print("size:", temp_path.stat().st_size)
 
         media = Media(
             user_id=user_id,
@@ -245,6 +243,10 @@ class UploadService:
         )
 
         await self.session.commit()
+        
+        process_media.delay(
+            str(media.id)
+        )
 
         await self.session.refresh(
             media
