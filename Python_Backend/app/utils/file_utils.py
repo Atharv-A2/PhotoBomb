@@ -6,6 +6,7 @@ def build_temp_path(
     root: Path,
     extension: str,
 ) -> Path:
-    return root / (
-        f"{uuid4()}{extension}"
+    return (
+        root
+        / f"{uuid4()}{extension}"
     )

@@ -27,8 +27,12 @@ class Settings(BaseSettings):
     telegram_image_chat_id: str = Field(default="")
     telegram_video_chat_id: str = Field(default="")
 
-    temp_storage_path: Path
-    thumbnail_storage_path: Path
+    temp_storage_path: Path = (
+        BASE_DIR / "storage" / "temp"
+    )
+    thumbnail_storage_path: Path = (
+        BASE_DIR / "storage" / "thumbnails"
+    )
 
     log_level: str = "INFO"
 

@@ -48,3 +48,12 @@ class UploadSessionRepository:
         return (
             result.scalar_one_or_none()
         )
+    
+    async def update_status(
+        self,
+        upload_session,
+        status,
+    ):
+        upload_session.status = status
+
+        await self.session.flush()

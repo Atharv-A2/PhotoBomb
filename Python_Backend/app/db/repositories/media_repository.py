@@ -1,3 +1,8 @@
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import (
+    AsyncSession,
+)
+
 from app.db.models.media import Media
 
 
@@ -5,7 +10,7 @@ class MediaRepository:
 
     def __init__(
         self,
-        session,
+        session: AsyncSession,
     ):
         self.session = session
 
@@ -20,3 +25,23 @@ class MediaRepository:
         await self.session.flush()
 
         return media
+
+    async def get(
+        self,
+        media_id,
+    ):
+        stmt = select(
+            Media
+        ).where(
+            Media.id == media_id
+        )
+
+        result = (
+            await self.session.execute(
+                stmt
+            )
+        )
+
+        return (
+            result.scalar_one_or_none()
+        )

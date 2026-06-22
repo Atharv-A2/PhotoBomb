@@ -1,6 +1,8 @@
 from fastapi import APIRouter
 from fastapi import Depends
 from fastapi import HTTPException
+from fastapi import UploadFile
+from fastapi import File
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
 )
@@ -53,6 +55,41 @@ async def create_upload_session(
             .create_upload_session(
                 current_user.id,
                 request,
+            )
+        )
+
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=400,
+            detail=str(exc),
+        )
+    
+
+@router.post(
+    "/upload-sessions/{upload_session_id}/file"
+)
+async def upload_file(
+    upload_session_id,
+    file: UploadFile = File(
+        ...
+    ),
+    current_user: User =
+        Depends(
+            get_current_user
+        ),
+    session: AsyncSession =
+        Depends(get_db),
+):
+    service = UploadService(
+        session
+    )
+
+    try:
+        return await (
+            service.upload_file(
+                upload_session_id,
+                current_user.id,
+                file,
             )
         )
 
