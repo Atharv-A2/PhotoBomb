@@ -12,7 +12,8 @@ SUPPORTED_VIDEOS = {
     "video/3gpp",
 }
 
-def validate_media_type(
+
+def validate_mime_type(
     mime_type: str,
 ):
     supported = (

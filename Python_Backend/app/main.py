@@ -9,6 +9,7 @@ from app.core.logging.logger import (
     configure_logging,
 )
 from app.api.v1.auth import router as auth_router
+from app.api.v1.media import router as media_router
 
 
 @asynccontextmanager
@@ -46,6 +47,11 @@ app.include_router(
     prefix=settings.api_v1_prefix,
 )
 
+app.include_router(
+    media_router,
+    prefix=settings.api_v1_prefix,
+)
+
 
 @app.get("/health/live")
 async def live():
@@ -56,10 +62,11 @@ async def live():
 async def ready():
     return {"status": "ready"}
 
+
+
 from app.api.v1.test_auth import (
     router as test_auth_router,
 )
-
 app.include_router(
     test_auth_router
 )

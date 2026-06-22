@@ -1,9 +1,17 @@
 from pydantic import BaseModel
+from pydantic import Field
 
 
-class InitiateUploadRequest(
+class CreateUploadSessionRequest(
     BaseModel
 ):
-    filename: str
-    size: int
+    filename: str = Field(
+        min_length=1,
+        max_length=512,
+    )
+
+    file_size: int = Field(
+        gt=0
+    )
+
     mime_type: str

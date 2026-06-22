@@ -1,15 +1,13 @@
 from pydantic import BaseModel
+from uuid import UUID
+
+from app.db.enums.upload_status import (
+    UploadStatus,
+)
 
 
-class InitiateUploadResponse(
+class UploadSessionResponse(
     BaseModel
 ):
-    upload_id: str
-    status: str
-
-
-class UploadResponse(
-    BaseModel
-):
-    media_id: str
-    status: str
+    upload_session_id: UUID
+    status: UploadStatus
