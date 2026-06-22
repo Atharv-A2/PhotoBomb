@@ -5,38 +5,16 @@ from fastapi import HTTPException
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError
 from jose import jwt
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config.settings import (
     get_settings,
 )
+from app.db.models.user import User
 from app.db.session.session import get_db
-from app.db.models.user import User
-
-from datetime import UTC
-from datetime import datetime
-from datetime import timedelta
-
-from app.core.config.settings import (
-    get_settings,
-)
-from app.core.security.auth import (
-    hash_refresh_token,
-)
-from app.core.security.hashing import (
-    hash_password,
-    verify_password,
-)
-from app.core.security.jwt import (
-    create_access_token,
-    create_refresh_token,
-)
-from app.db.models.refresh_token import (
-    RefreshToken,
-)
-from app.db.models.user import User
 
 oauth2_scheme = OAuth2PasswordBearer(
-    tokenUrl="/api/v1/auth/login"
+    tokenUrl="/api/v1/auth/login-swagger"
 )
 
 settings = get_settings()
@@ -47,6 +25,9 @@ async def get_current_user(
         str,
         Depends(oauth2_scheme),
     ],
+    session: AsyncSession = Depends(
+        get_db
+    ),
 ):
     try:
         payload = jwt.decode(
@@ -63,16 +44,21 @@ async def get_current_user(
             detail="Invalid token",
         )
 
-    async for session in get_db():
-        user = await session.get(
-            User,
-            user_id,
-        )
+    user = await session.get(
+        User,
+        user_id,
+    )
 
-    if not user:
+    if user is None:
         raise HTTPException(
             status_code=401,
             detail="User not found",
+        )
+
+    if not user.is_active:
+        raise HTTPException(
+            status_code=401,
+            detail="User inactive",
         )
 
     return user

@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.models.user import User
 
 
-class UserRepository:
+class UserRepository():
 
     def __init__(
         self,
@@ -33,3 +33,15 @@ class UserRepository:
         self.session.add(user)
         await self.session.flush()
         return user
+    
+    
+    async def count_users(
+        self,
+    ) -> int:
+        result = await self.session.execute(
+            select(User)
+        )
+
+        return len(
+            result.scalars().all()
+        )

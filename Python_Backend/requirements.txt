@@ -48,3 +48,7 @@ pytest-cov
 black
 ruff
 mypy
+
+python-telegram-bot
+
+bcrypt==3.2.2

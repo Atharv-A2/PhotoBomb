@@ -1,5 +1,4 @@
 from contextlib import asynccontextmanager
-
 from fastapi import FastAPI
 
 from app.core.config.settings import get_settings
@@ -9,6 +8,7 @@ from app.core.exceptions.handlers import (
 from app.core.logging.logger import (
     configure_logging,
 )
+from app.api.v1.auth import router as auth_router
 
 
 @asynccontextmanager
@@ -41,6 +41,12 @@ app = FastAPI(
 register_exception_handlers(app)
 
 
+app.include_router(
+    auth_router,
+    prefix=settings.api_v1_prefix,
+)
+
+
 @app.get("/health/live")
 async def live():
     return {"status": "ok"}
@@ -49,3 +55,11 @@ async def live():
 @app.get("/health/ready")
 async def ready():
     return {"status": "ready"}
+
+from app.api.v1.test_auth import (
+    router as test_auth_router,
+)
+
+app.include_router(
+    test_auth_router
+)

@@ -1,5 +1,7 @@
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from datetime import UTC
+from datetime import datetime
 
 from app.db.models.refresh_token import (
     RefreshToken,
@@ -17,7 +19,7 @@ class RefreshTokenRepository:
     async def create(
         self,
         token: RefreshToken,
-    ) -> RefreshToken:
+    ):
         self.session.add(token)
         await self.session.flush()
         return token
@@ -25,7 +27,7 @@ class RefreshTokenRepository:
     async def get_by_hash(
         self,
         token_hash: str,
-    ) -> RefreshToken | None:
+    ):
         stmt = select(
             RefreshToken
         ).where(
@@ -37,4 +39,17 @@ class RefreshTokenRepository:
             stmt
         )
 
-        return result.scalar_one_or_none()
+        return (
+            result.scalar_one_or_none()
+        )
+    
+
+    async def revoke(
+        self,
+        token: RefreshToken,
+    ):
+        token.revoked_at = (
+            datetime.now(UTC)
+        )
+
+        await self.session.flush()
