@@ -26,9 +26,14 @@ from app.services.media.upload_service import (
 from app.schemas.media.request import (
     BulkCreateUploadSessionRequest,
 )
-
 from app.schemas.media.response import (
     BulkUploadSessionResponse,
+)
+from app.services.media.gallery_service import (
+    GalleryService,
+)
+from app.services.media.viewer_service import (
+    ViewerService,
 )
 
 router = APIRouter(
@@ -139,5 +144,75 @@ async def create_bulk_upload_sessions(
     return (
         BulkUploadSessionResponse(
             sessions=sessions
+        )
+    )
+
+
+@router.get("")
+async def list_media(
+    limit: int = 50,
+    offset: int = 0,
+    current_user: User =
+        Depends(
+            get_current_user
+        ),
+    session: AsyncSession =
+        Depends(get_db),
+):
+    service = GalleryService(
+        session
+    )
+
+    return await (
+        service.list_media(
+            current_user.id,
+            limit,
+            offset,
+        )
+    )
+
+
+@router.get(
+    "/{media_id}"
+)
+async def get_media(
+    media_id,
+    current_user: User =
+        Depends(
+            get_current_user
+        ),
+    session: AsyncSession =
+        Depends(get_db),
+):
+    service = ViewerService(
+        session
+    )
+
+    return await (
+        service.get_detail(
+            media_id
+        )
+    )
+
+
+@router.get(
+    "/{media_id}/viewer"
+)
+async def get_viewer(
+    media_id,
+    current_user: User =
+        Depends(
+            get_current_user
+        ),
+    session: AsyncSession =
+        Depends(get_db),
+):
+    service = ViewerService(
+        session
+    )
+
+    return await (
+        service.get_viewer(
+            media_id
         )
     )

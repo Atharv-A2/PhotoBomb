@@ -4,6 +4,10 @@ from sqlalchemy.ext.asyncio import (
 )
 
 from app.db.models.media import Media
+from sqlalchemy import desc
+from app.db.enums.media_status import (
+    MediaStatus,
+)
 
 
 class MediaRepository:
@@ -71,3 +75,36 @@ class MediaRepository:
         )
 
         await self.session.flush()
+
+
+    async def list_available(
+        self,
+        user_id,
+        limit: int,
+        offset: int,
+    ):
+        stmt = (
+            select(Media)
+            .where(
+                Media.user_id == user_id,
+                Media.status
+                == MediaStatus.AVAILABLE,
+            )
+            .order_by(
+                desc(
+                    Media.capture_time
+                ).nulls_last()
+            )
+            .limit(limit)
+            .offset(offset)
+        )
+
+        result = (
+            await self.session.execute(
+                stmt
+            )
+        )
+
+        return (
+            result.scalars().all()
+        )

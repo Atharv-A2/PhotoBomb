@@ -44,3 +44,28 @@ class MediaThumbnailRepository:
         return (
             result.scalar_one_or_none()
         )
+    
+
+    async def get(
+        self,
+        thumbnail_id,
+    ):
+        stmt = (
+            select(
+                MediaThumbnail
+            )
+            .where(
+                MediaThumbnail.id
+                == thumbnail_id
+            )
+        )
+
+        result = (
+            await self.session.execute(
+                stmt
+            )
+        )
+
+        return (
+            result.scalar_one_or_none()
+        )

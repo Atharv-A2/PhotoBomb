@@ -76,3 +76,15 @@ class TelegramClient:
             )
 
         return payload["result"]
+    
+
+    def build_download_url(
+        self,
+        file_path: str,
+    ):
+        return (
+            f"{settings.telegram_api_base}"
+            f"/file/bot"
+            f"{settings.telegram_bot_token}"
+            f"/{file_path}"
+        )

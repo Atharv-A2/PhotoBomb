@@ -10,6 +10,7 @@ from app.core.logging.logger import (
 )
 from app.api.v1.auth import router as auth_router
 from app.api.v1.media import router as media_router
+from app.api.v1.thumbnails import router as thumbnails_router
 
 
 @asynccontextmanager
@@ -49,6 +50,11 @@ app.include_router(
 
 app.include_router(
     media_router,
+    prefix=settings.api_v1_prefix,
+)
+
+app.include_router(
+    thumbnails_router,
     prefix=settings.api_v1_prefix,
 )
 
