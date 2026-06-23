@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 from pydantic import Field
+from typing import List
 
 
 class CreateUploadSessionRequest(
@@ -15,3 +16,11 @@ class CreateUploadSessionRequest(
     )
 
     mime_type: str
+
+
+class BulkCreateUploadSessionRequest(
+    BaseModel,
+):
+    files: List[
+        CreateUploadSessionRequest
+    ]

@@ -30,8 +30,9 @@ class MediaStorage(
     )
 
     storage_key: Mapped[str] = mapped_column(
-        String(255),
+        String(512),
         nullable=False,
+        index=True,
     )
 
     storage_metadata: Mapped[dict] = mapped_column(

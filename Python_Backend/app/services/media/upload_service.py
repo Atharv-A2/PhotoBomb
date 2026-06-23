@@ -281,3 +281,77 @@ class UploadService:
             "status":
                 media.status,
         }
+    
+
+    async def create_bulk_upload_sessions(
+        self,
+        user_id,
+        requests,
+    ):
+        MAX_BULK_SESSION_SIZE = 1000
+        
+        sessions = []
+
+        for request in requests:
+
+            validate_mime_type(
+                request.mime_type
+            )
+
+            upload_session = (
+                UploadSession(
+                    user_id=user_id,
+                    upload_token=(
+                        secrets.token_urlsafe(
+                            32
+                        )
+                    ),
+                    filename=(
+                        request.filename
+                    ),
+                    mime_type=(
+                        request.mime_type
+                    ),
+                    file_size=(
+                        request.file_size
+                    ),
+                    status=(
+                        UploadStatus.PENDING
+                    ),
+                    expires_at=(
+                        datetime.now(
+                            UTC
+                        )
+                        + timedelta(
+                            hours=1
+                        )
+                    ),
+                )
+            )
+
+            await (
+                self.upload_sessions
+                .create(
+                    upload_session
+                )
+            )
+
+            sessions.append(
+                upload_session
+            )
+
+        await self.session.commit()
+
+        responses = []
+
+        for session in sessions:
+            responses.append(
+                UploadSessionResponse(
+                    upload_session_id=
+                        session.id,
+                    status=
+                        session.status,
+                )
+            )
+
+        return responses

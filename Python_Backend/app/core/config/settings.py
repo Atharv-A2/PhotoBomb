@@ -24,8 +24,9 @@ class Settings(BaseSettings):
     jwt_refresh_secret: str = Field(default="")
 
     telegram_bot_token: str = Field(default="")
-    telegram_image_chat_id: str = Field(default="")
-    telegram_video_chat_id: str = Field(default="")
+    telegram_media_chat_id: str = Field(default="")
+
+    telegram_api_base: str = ( "https://api.telegram.org" )
 
     temp_storage_path: Path = (
         BASE_DIR / "storage" / "temp"

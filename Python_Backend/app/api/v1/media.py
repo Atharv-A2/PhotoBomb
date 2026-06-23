@@ -23,6 +23,13 @@ from app.schemas.media.response import (
 from app.services.media.upload_service import (
     UploadService,
 )
+from app.schemas.media.request import (
+    BulkCreateUploadSessionRequest,
+)
+
+from app.schemas.media.response import (
+    BulkUploadSessionResponse,
+)
 
 router = APIRouter(
     prefix="/media",
@@ -98,3 +105,39 @@ async def upload_file(
             status_code=400,
             detail=str(exc),
         )
+    
+
+@router.post(
+    "/upload-sessions/bulk",
+    response_model=
+        BulkUploadSessionResponse,
+)
+async def create_bulk_upload_sessions(
+    request:
+        BulkCreateUploadSessionRequest,
+    current_user: User =
+        Depends(
+            get_current_user
+        ),
+    session: AsyncSession =
+        Depends(get_db),
+):
+    MAX_BULK_SESSION_SIZE = 1000
+    
+    service = UploadService(
+        session
+    )
+
+    sessions = (
+        await service
+        .create_bulk_upload_sessions(
+            current_user.id,
+            request.files,
+        )
+    )
+
+    return (
+        BulkUploadSessionResponse(
+            sessions=sessions
+        )
+    )

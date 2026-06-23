@@ -1,6 +1,9 @@
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from app.db.models.media import Media
+from app.db.enums.media_status import (
+    MediaStatus,
+)
 
 
 class WorkerMediaRepository:
@@ -38,6 +41,17 @@ class WorkerMediaRepository:
 
     def create(self, media):
         self.session.add(media)
+        self.session.flush()
+
+        return media
+    
+    def update_status(
+        self,
+        media,
+        status: MediaStatus,
+    ):
+        media.status = status
+
         self.session.flush()
 
         return media

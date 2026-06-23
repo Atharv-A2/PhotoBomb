@@ -1,38 +1,57 @@
-from abc import abstractmethod
 from pathlib import Path
 
+from app.core.config.settings import (
+    get_settings,
+)
+from app.providers.telegram.client import (
+    TelegramClient,
+)
+from app.providers.telegram.mapper import (
+    TelegramMapper,
+)
 from app.services.storage.base import (
     StorageProvider,
 )
-from app.services.storage.models import (
-    StorageDownloadResult,
-    StorageUploadResult,
-)
+
+settings = get_settings()
 
 
-class TelegramStorageProvider(
+class TelegramProvider(
     StorageProvider
 ):
 
-    @abstractmethod
-    async def upload_file(
+    def __init__(self):
+        self.client = (
+            TelegramClient()
+        )
+
+    def upload_file(
         self,
-        file_path: Path,
-        media_type: str,
-    ) -> StorageUploadResult:
+        path: Path,
+        media_type,
+    ):
+        result = (
+            self.client.send_document(
+                settings.telegram_media_chat_id,
+                path,
+            )
+        )
+
+        return (
+            TelegramMapper
+            .to_upload_result(
+                result
+            )
+        )
+
+    def download_file(
+        self,
+        storage_metadata,
+    ):
         raise NotImplementedError
 
-    @abstractmethod
-    async def download_file(
+    def delete_file(
         self,
-        storage_metadata: dict,
-        media_quality: str,
-    ) -> StorageDownloadResult:
-        raise NotImplementedError
-
-    @abstractmethod
-    async def delete_file(
-        self,
-        storage_metadata: dict,
-    ) -> None:
+        storage_metadata,
+    ):
         raise NotImplementedError
