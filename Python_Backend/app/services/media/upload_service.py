@@ -45,10 +45,13 @@ from app.services.media.storage_service import (
     TemporaryStorageService,
 )
 from app.utils.file_utils import (
-    build_temp_path,
+    build_temp_path, move_file
 )
 from app.workers.tasks.media_processing import (
     process_media,
+)
+from app.services.media.file_detector import (
+    FileDetector,
 )
 
 settings = get_settings()
@@ -167,46 +170,66 @@ class UploadService:
             )
         )
 
-        is_image = (
-            upload_session.mime_type
-            .startswith(
-                "image/"
-            )
+        incoming_root = (
+            settings.temp_storage_path
         )
 
-        media_type = (
-            MediaType.IMAGE
-            if is_image
-            else MediaType.VIDEO
+        incoming_root.mkdir(
+            parents=True,
+            exist_ok=True,
         )
 
+        temp_path = build_temp_path(
+            incoming_root,
+            ".upload",
+        )
+
+        await self.storage.save(
+            file,
+            temp_path,
+        )
+
+        actual = FileDetector.detect(temp_path)
+
+        actual_mime_type = (actual["mime_type"])
+
+        if actual_mime_type.startswith(
+            "image/"
+        ):
+            media_type = (MediaType.IMAGE)
+
+        elif actual_mime_type.startswith(
+            "video/"
+        ):
+            media_type = (MediaType.VIDEO)
+
+        else:
+            raise ValueError("Unsupported file type")
+        
         root = (
-            settings
-            .temp_storage_path
+            settings.temp_storage_path
             / (
                 "images"
-                if is_image
+                if media_type
+                == MediaType.IMAGE
                 else "videos"
             )
         )
 
         extension = (
-            Path(
-                upload_session.filename
-            )
-            .suffix
+            f".{actual['extension']}"
         )
 
-        temp_path = (
+        final_path = (
             build_temp_path(
                 root,
                 extension,
             )
         )
 
-        await self.storage.save(
-            file,
+        move_file(
             temp_path,
+            final_path,
         )
 
         media = Media(
@@ -220,13 +243,13 @@ class UploadService:
                 upload_session.filename
             ),
             mime_type=(
-                upload_session.mime_type
+                actual_mime_type
             ),
             file_size=(
-                upload_session.file_size
+                final_path.stat().st_size
             ),
             temp_path=str(
-                temp_path
+                final_path
             ),
         )
 

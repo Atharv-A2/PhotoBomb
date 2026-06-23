@@ -34,6 +34,14 @@ class MediaThumbnail(
         nullable=False,
     )
 
-    width: Mapped[int]
-    height: Mapped[int]
-    size_bytes: Mapped[int]
+    width: Mapped[int] = mapped_column(
+        nullable=False
+    )
+
+    height: Mapped[int] = mapped_column(
+        nullable=False
+    )
+
+    size_bytes: Mapped[int] = mapped_column(
+        nullable=False
+    )
