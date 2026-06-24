@@ -3,6 +3,7 @@ from fastapi import Depends
 from fastapi import HTTPException
 from fastapi import UploadFile
 from fastapi import File
+from uuid import UUID
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
 )
@@ -81,7 +82,7 @@ async def create_upload_session(
     "/upload-sessions/{upload_session_id}/file"
 )
 async def upload_file(
-    upload_session_id,
+    upload_session_id: UUID,
     file: UploadFile = File(
         ...
     ),
@@ -176,7 +177,7 @@ async def list_media(
     "/{media_id}"
 )
 async def get_media(
-    media_id,
+    media_id: UUID,
     current_user: User =
         Depends(
             get_current_user
@@ -199,7 +200,7 @@ async def get_media(
     "/{media_id}/viewer"
 )
 async def get_viewer(
-    media_id,
+    media_id: UUID,
     current_user: User =
         Depends(
             get_current_user
@@ -213,6 +214,29 @@ async def get_viewer(
 
     return await (
         service.get_viewer(
+            media_id
+        )
+    )
+
+
+@router.get(
+    "/{media_id}/stream"
+)
+async def stream_media(
+    media_id: UUID,
+    current_user: User =
+        Depends(
+            get_current_user
+        ),
+    session: AsyncSession =
+        Depends(get_db),
+):
+    service = ViewerService(
+        session
+    )
+
+    return await (
+        service.stream_media(
             media_id
         )
     )

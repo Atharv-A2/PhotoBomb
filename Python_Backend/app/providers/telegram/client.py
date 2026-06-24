@@ -88,3 +88,24 @@ class TelegramClient:
             f"{settings.telegram_bot_token}"
             f"/{file_path}"
         )
+
+
+    def download_bytes(
+        self,
+        file_path: str,
+    ):
+        url = (
+            self.build_download_url(
+                file_path
+            )
+        )
+
+        response = (
+            self.client.get(
+                url
+            )
+        )
+
+        response.raise_for_status()
+
+        return response.content

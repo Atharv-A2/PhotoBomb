@@ -25,10 +25,10 @@ from app.db.models.media_thumbnail import (
 from app.services.thumbnails.thumbnail_service import (
     ThumbnailService,
 )
-from app.db.repositories.worker_media_repository import (
+from app.db.repositories.Sync.worker_media_repository import (
     WorkerMediaRepository,
 )
-from app.db.repositories.worker_media_thumbnail_repository import (
+from app.db.repositories.Sync.worker_media_thumbnail_repository import (
     WorkerMediaThumbnailRepository,
 )
 from app.db.enums.media_status import (
@@ -40,13 +40,13 @@ from app.services.storage.factory import (
 from app.db.enums.storage_provider_type import (
     StorageProviderType,
 )
-from app.db.repositories.worker_media_storage_repository import (
+from app.db.repositories.Sync.worker_media_storage_repository import (
     WorkerMediaStorageRepository,
 )
 from app.db.models.media_storage import (
     MediaStorage,
 )
-from app.db.repositories.worker_storage_provider_repository import (
+from app.db.repositories.Sync.worker_storage_provider_repository import (
     WorkerStorageProviderRepository,
 )
 
@@ -237,6 +237,13 @@ def process_media_sync(
             repo_storage.create(
                 storage
             )
+
+            temp_path = Path(
+                media.temp_path
+            )
+
+            if temp_path.exists():
+                temp_path.unlink()
 
             repo.update_status(
                 media,

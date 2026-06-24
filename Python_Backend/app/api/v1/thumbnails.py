@@ -1,6 +1,8 @@
 from fastapi import APIRouter
 from fastapi import Depends
 from fastapi.responses import FileResponse
+from fastapi import HTTPException
+from uuid import UUID
 
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
@@ -24,7 +26,7 @@ router = APIRouter(
     "/{thumbnail_id}"
 )
 async def get_thumbnail(
-    thumbnail_id,
+    thumbnail_id: UUID,
     session: AsyncSession =
         Depends(get_db),
 ):

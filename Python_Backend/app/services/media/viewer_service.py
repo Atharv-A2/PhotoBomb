@@ -1,3 +1,4 @@
+from fastapi import Response
 from app.core.config.settings import (
     get_settings,
 )
@@ -124,4 +125,54 @@ class ViewerService:
         return ViewerResponse(
             download_url=
                 download_url
+        )
+    
+
+    async def stream_media(
+        self,
+        media_id,
+    ):
+        media = (
+            await self.media.get(
+                media_id
+            )
+        )
+
+        if media is None:
+            raise ValueError(
+                "Media not found"
+            )
+
+        storage = (
+            await self.storage
+            .get_by_media_id(
+                media_id
+            )
+        )
+
+        file_id = (
+            storage.storage_metadata[
+                "file_id"
+            ]
+        )
+
+        telegram_file = (
+            self.telegram.get_file(
+                file_id
+            )
+        )
+
+        file_bytes = (
+            self.telegram
+            .download_bytes(
+                telegram_file[
+                    "file_path"
+                ]
+            )
+        )
+
+        return Response(
+            content=file_bytes,
+            media_type=
+                media.mime_type,
         )
