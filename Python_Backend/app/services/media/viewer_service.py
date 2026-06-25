@@ -1,4 +1,10 @@
 from fastapi import Response
+from pathlib import Path
+from fastapi import HTTPException
+from fastapi.responses import FileResponse
+from fastapi.responses import StreamingResponse
+from starlette.background import BackgroundTask
+
 from app.core.config.settings import (
     get_settings,
 )
@@ -18,9 +24,14 @@ from app.providers.telegram.client import (
 from app.schemas.media.viewer import (
     ViewerResponse,
 )
-
 from app.schemas.media.detail import (
     MediaDetailResponse,
+)
+from app.db.repositories.media_thumbnail_repository import (
+    MediaThumbnailRepository,
+)
+from app.services.storage.storage_service import (
+    StorageService,
 )
 
 settings = get_settings()
@@ -43,6 +54,14 @@ class ViewerService:
                 session
             )
         )
+        
+        self.thumbnail_repo = (
+            MediaThumbnailRepository(
+                session
+            )
+        )
+
+        self.storage_service = StorageService()
 
         self.telegram = (
             TelegramClient()
@@ -132,10 +151,8 @@ class ViewerService:
         self,
         media_id,
     ):
-        media = (
-            await self.media.get(
-                media_id
-            )
+        media = await self.media.get(
+            media_id
         )
 
         if media is None:
@@ -143,36 +160,59 @@ class ViewerService:
                 "Media not found"
             )
 
-        storage = (
-            await self.storage
-            .get_by_media_id(
+        storage = await (
+            self.storage.get_by_media_id(
                 media_id
             )
         )
 
-        file_id = (
-            storage.storage_metadata[
-                "file_id"
-            ]
-        )
+        if storage is None:
+            raise ValueError(
+                "Storage not found"
+            )
 
-        telegram_file = (
-            self.telegram.get_file(
-                file_id
+        stream = (
+            self.storage_service.stream_file(
+                storage.storage_metadata
             )
         )
 
-        file_bytes = (
-            self.telegram
-            .download_bytes(
-                telegram_file[
-                    "file_path"
-                ]
+        return StreamingResponse(
+            stream.iter_bytes(
+                chunk_size=64 * 1024
+            ),
+            media_type=media.mime_type,
+            background=BackgroundTask(stream.close),
+        )
+    
+
+    async def get_thumbnail(
+        self,
+        thumbnail_id,
+    ):
+        thumbnail = await (
+            self.thumbnail_repo.get(
+                thumbnail_id
             )
         )
 
-        return Response(
-            content=file_bytes,
-            media_type=
-                media.mime_type,
+        if thumbnail is None:
+            raise HTTPException(
+                status_code=404,
+                detail="Thumbnail not found",
+            )
+        
+        path = Path(
+            thumbnail.path
+        )
+
+        if not path.exists():
+            raise HTTPException(
+                status_code=404,
+                detail="Thumbnail not found"
+            )
+
+        return FileResponse(
+            path,
+            media_type="image/webp",
         )

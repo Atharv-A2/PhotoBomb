@@ -44,14 +44,29 @@ class TelegramProvider(
             )
         )
 
+
     def download_file(
         self,
         storage_metadata,
     ):
         raise NotImplementedError
 
+
     def delete_file(
         self,
         storage_metadata,
     ):
         raise NotImplementedError
+    
+
+    def stream_file(
+        self,
+        storage_metadata: dict,
+    ):
+        file = self.client.get_file(
+            storage_metadata["file_id"]
+        )
+
+        return self.client.stream_file(
+            file["file_path"]
+        )

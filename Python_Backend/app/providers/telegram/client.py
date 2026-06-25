@@ -109,3 +109,26 @@ class TelegramClient:
         response.raise_for_status()
 
         return response.content
+
+
+    def stream_file(
+        self,
+        file_path: str,
+    ):
+        url = self.build_download_url(
+            file_path
+        )
+
+        request = self.client.build_request(
+            "GET",
+            url,
+        )
+
+        response = self.client.send(
+            request,
+            stream=True,
+        )
+
+        response.raise_for_status()
+
+        return response

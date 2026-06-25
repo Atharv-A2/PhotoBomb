@@ -69,3 +69,23 @@ class MediaThumbnailRepository:
         return (
             result.scalar_one_or_none()
         )
+
+
+    async def get_by_media_ids(
+        self,
+        media_ids,
+    ):
+        stmt = (
+            select(MediaThumbnail)
+            .where(
+                MediaThumbnail.media_id.in_(
+                    media_ids
+                )
+            )
+        )
+
+        result = await self.session.execute(
+            stmt
+        )
+
+        return result.scalars().all()

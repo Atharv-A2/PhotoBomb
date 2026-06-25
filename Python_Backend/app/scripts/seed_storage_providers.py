@@ -1,5 +1,15 @@
+import sys
+from pathlib import Path
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
+
+sys.path.append(
+    str(
+        Path(__file__)
+        .resolve()
+        .parents[2]
+    )
+)
 
 from app.core.config.settings import (
     get_settings,

@@ -1,6 +1,4 @@
-from sqlalchemy import delete
-from datetime import datetime
-from datetime import UTC
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.db.models.upload_session import (
@@ -8,7 +6,7 @@ from app.db.models.upload_session import (
 )
 
 
-class UploadSyncSessionRepository:
+class WorkerUploadSessionRepository:
 
     def __init__(
         self,
@@ -16,19 +14,31 @@ class UploadSyncSessionRepository:
     ):
         self.session = session
 
-
-    def delete_expired(self):
-        stmt = delete(
+    def get(
+        self,
+        upload_session_id,
+    ):
+        stmt = select(
             UploadSession
         ).where(
-            UploadSession.expires_at
-            < datetime.now(
-                UTC
-            )
+            UploadSession.id
+            == upload_session_id
         )
 
         result = self.session.execute(
             stmt
         )
 
-        return result.rowcount
+        return (
+            result.scalar_one_or_none()
+        )
+
+    def delete(
+        self,
+        upload_session: UploadSession,
+    ):
+        self.session.delete(
+            upload_session
+        )
+
+        self.session.flush()

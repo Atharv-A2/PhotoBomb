@@ -49,6 +49,9 @@ from app.db.models.media_storage import (
 from app.db.repositories.Sync.worker_storage_provider_repository import (
     WorkerStorageProviderRepository,
 )
+from app.db.repositories.Sync.worker_upload_session_repository import (
+    WorkerUploadSessionRepository,
+)
 
 from app.core.config.settings import (
     get_settings,
@@ -65,14 +68,17 @@ settings = get_settings()
 )
 def process_media(
     media_id: str,
+    upload_session_id,
 ):
     process_media_sync(
-        media_id
+        media_id,
+        upload_session_id,
     )
 
 
 def process_media_sync(
     media_id: str,
+    upload_session_id,
 ):
     with (
         WorkerSessionLocal()
@@ -81,6 +87,12 @@ def process_media_sync(
         try:
             repo = (
                 WorkerMediaRepository(
+                    session
+                )
+            )
+
+            upload_repo = (
+                WorkerUploadSessionRepository(
                     session
                 )
             )
@@ -244,6 +256,18 @@ def process_media_sync(
 
             if temp_path.exists():
                 temp_path.unlink()
+
+            upload_session = (
+                upload_repo
+                .get(
+                    upload_session_id
+                )
+            )
+
+            if upload_session:
+                upload_repo.delete(
+                    upload_session
+                )
 
             repo.update_status(
                 media,

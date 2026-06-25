@@ -268,7 +268,8 @@ class UploadService:
         await self.session.commit()
         
         process_media.delay(
-            str(media.id)
+            str(media.id),
+            str(upload_session.id),
         )
 
         await self.session.refresh(

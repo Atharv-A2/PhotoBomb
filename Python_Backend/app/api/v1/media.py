@@ -240,3 +240,26 @@ async def stream_media(
             media_id
         )
     )
+
+
+@router.get(
+    "/thumbnails/{thumbnail_id}"
+)
+async def get_thumbnail(
+    thumbnail_id: UUID,
+    current_user: User = Depends(
+        get_current_user
+    ),
+    session: AsyncSession = Depends(
+        get_db
+    ),
+):
+    service = ViewerService(
+        session
+    )
+
+    return await (
+        service.get_thumbnail(
+            thumbnail_id
+        )
+    )
