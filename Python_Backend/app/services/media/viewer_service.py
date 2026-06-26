@@ -17,10 +17,6 @@ from app.db.repositories.media_storage_repository import (
     MediaStorageRepository,
 )
 
-from app.providers.telegram.client import (
-    TelegramClient,
-)
-
 from app.schemas.media.viewer import (
     ViewerResponse,
 )
@@ -32,6 +28,9 @@ from app.db.repositories.media_thumbnail_repository import (
 )
 from app.services.storage.storage_service import (
     StorageService,
+)
+from app.services.cache.cache_service import (
+    CacheService,
 )
 
 settings = get_settings()
@@ -63,9 +62,7 @@ class ViewerService:
 
         self.storage_service = StorageService()
 
-        self.telegram = (
-            TelegramClient()
-        )
+        self.cache = CacheService()
 
     async def get_detail(
         self,
@@ -170,21 +167,30 @@ class ViewerService:
             raise ValueError(
                 "Storage not found"
             )
+        
+        extension = Path(
+            media.original_filename
+        ).suffix
 
-        stream = (
-            self.storage_service.stream_file(
-                storage.storage_metadata
+        cached_path = (
+            self.cache.get_cached_path(
+                storage.storage_key,
+                extension,
             )
         )
 
-        return StreamingResponse(
-            stream.iter_bytes(
-                chunk_size=64 * 1024
-            ),
+        if not cached_path.exists():
+
+            self.storage_service.download_to_path(
+                storage.storage_metadata,
+                cached_path,
+            )
+
+        return FileResponse(
+            cached_path,
             media_type=media.mime_type,
-            background=BackgroundTask(stream.close),
         )
-    
+            
 
     async def get_thumbnail(
         self,
