@@ -70,3 +70,21 @@ class TelegramProvider(
         return self.client.stream_file(
             file["file_path"]
         )
+    
+
+    def download_to_path(
+        self,
+        storage_metadata,
+        destination,
+    ):
+
+        file = self.client.get_file(
+            storage_metadata[
+                "file_id"
+            ]
+        )
+
+        return self.client.download_to_path(
+            file["file_path"],
+            destination,
+        )

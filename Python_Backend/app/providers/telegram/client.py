@@ -132,3 +132,34 @@ class TelegramClient:
         response.raise_for_status()
 
         return response
+    
+    
+    def download_to_path(
+        self,
+        file_path: str,
+        destination: Path,
+    ):
+
+        url = self.build_download_url(
+            file_path
+        )
+
+        with self.client.stream(
+            "GET",
+            url,
+        ) as response:
+
+            response.raise_for_status()
+
+            with open(
+                destination,
+                "wb",
+            ) as file:
+
+                for chunk in response.iter_bytes():
+
+                    file.write(
+                        chunk
+                    )
+
+        return destination
