@@ -2,9 +2,14 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <uses-permission android:name="android.permission.INTERNET" />
+
     <application
+        android:name=".PhotoBombApp"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
+        android:networkSecurityConfig="@xml/network_security_config"
+        android:usesCleartextTraffic="true"
         android:fullBackupContent="@xml/backup_rules"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
@@ -12,12 +17,24 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.PhotoBomb">
         <activity
-            android:name=".MainActivity"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
+            android:name=".MainActivity">
+        </activity>
+        <activity
+            android:name=".app.ui.auth.LoginActivity"/>
+        <activity
+            android:name=".app.presentation.gallery.GalleryActivity"/>
 
-                <category android:name="android.intent.category.LAUNCHER" />
+        <activity
+            android:name=".app.presentation.viewer.ViewerActivity"/>
+        <activity
+            android:name=".app.ui.splash.SplashActivity"
+            android:exported="true">
+
+            <intent-filter>
+                <action
+                    android:name="android.intent.action.MAIN" />
+                <category
+                    android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
     </application>
