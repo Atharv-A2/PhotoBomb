@@ -9,6 +9,7 @@ import com.example.photobomb.app.data.api.StreamApi
 import com.example.photobomb.app.data.api.ViewerApi
 import com.example.photobomb.app.data.datastore.AuthPreferences
 import com.example.photobomb.app.data.repository.AuthRepository
+import com.example.photobomb.app.upload.api.UploadApi
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
@@ -46,6 +47,14 @@ object NetworkModule {
         return NetworkClient
             .getRetrofit(context)
             .create(StreamApi::class.java)
+    }
+
+    fun uploadApi(
+        context: Context
+    ): UploadApi {
+        return NetworkClient
+            .getRetrofit(context)
+            .create(UploadApi::class.java)
     }
 
 

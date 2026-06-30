@@ -11,8 +11,6 @@ import com.example.photobomb.app.data.local.database.AppDatabase
 import com.example.photobomb.app.data.local.database.DatabaseProvider
 import com.example.photobomb.app.data.repository.GalleryRepository
 import com.example.photobomb.app.presentation.gallery.GalleryActivity
-import com.example.photobomb.app.presentation.gallery.GalleryViewModel
-import com.example.photobomb.app.presentation.gallery.GalleryViewModelFactory
 import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {

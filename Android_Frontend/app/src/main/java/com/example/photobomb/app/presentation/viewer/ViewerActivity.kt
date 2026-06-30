@@ -3,6 +3,7 @@ package com.example.photobomb.app.presentation.viewer
 import android.os.Bundle
 import android.util.Log
 import android.view.View
+import androidx.annotation.OptIn
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.example.photobomb.app.core.network.NetworkModule
@@ -10,6 +11,7 @@ import com.example.photobomb.app.data.repository.ViewerRepository
 import com.example.photobomb.databinding.ActivityViewerBinding
 import kotlinx.coroutines.launch
 import androidx.media3.common.MediaItem
+import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import coil.load
@@ -33,6 +35,7 @@ class ViewerActivity :
     private var player:
             ExoPlayer? = null
 
+    @OptIn(UnstableApi::class)
     override fun onCreate(
         savedInstanceState: Bundle?
     ) {
