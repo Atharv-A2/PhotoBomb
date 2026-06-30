@@ -2,6 +2,7 @@ package com.example.photobomb.app.upload.utils
 
 import android.content.Context
 import android.net.Uri
+import com.example.photobomb.app.upload.network.ProgressRequestBody
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.asRequestBody
@@ -18,6 +19,8 @@ object MultipartUtils {
         filename: String,
 
         mimeType: String,
+
+        onProgress: (Int) -> Unit
 
         ): MultipartBody.Part {
 
@@ -37,8 +40,10 @@ object MultipartUtils {
             }
 
         val requestBody =
-            cacheFile.asRequestBody(
-                mimeType.toMediaTypeOrNull()
+            ProgressRequestBody(
+                cacheFile,
+                mimeType,
+                onProgress
             )
 
         return MultipartBody.Part.createFormData(

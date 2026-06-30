@@ -13,6 +13,9 @@ import androidx.core.net.toUri
 import com.example.photobomb.app.data.local.database.DatabaseProvider
 import com.example.photobomb.app.data.local.entity.UploadStatus
 import com.example.photobomb.app.data.repository.UploadQueueRepository
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 class MediaUploadWorker(
 
@@ -41,6 +44,8 @@ class MediaUploadWorker(
         )
 
     var hasFailures = false
+
+    var lastProgress = -1
 
     override suspend fun doWork(): Result {
 
@@ -122,7 +127,19 @@ class MediaUploadWorker(
                         mediaItem,
 
                         session,
-                    )
+                    ) { progress ->
+
+                        if (progress != lastProgress) {
+
+                            lastProgress = progress
+                            entity.progress =
+                                progress
+
+                            CoroutineScope(Dispatchers.IO).launch {
+                                queue.save(entity)
+                            }
+                        }
+                    }
 
                     entity.mediaId =
                         result.media_id

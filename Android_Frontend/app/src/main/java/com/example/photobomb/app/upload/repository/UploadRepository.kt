@@ -76,6 +76,8 @@ class UploadRepository(
 
         session: UploadSessionResponse,
 
+        onProgress: (Int) -> Unit
+
         ): UploadResult {
 
         val part =
@@ -90,6 +92,8 @@ class UploadRepository(
 
                 media.mimeType
                     ?: "application/octet-stream",
+
+                onProgress
             )
 
         val response =
