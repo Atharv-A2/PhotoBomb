@@ -1,5 +1,7 @@
 package com.example.photobomb.app.presentation.upload
 
+import android.content.Context
+import android.text.format.Formatter
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -12,7 +14,7 @@ class UploadQueueAdapter(
 
         (UploadQueueItem) -> Unit
 ) : RecyclerView.Adapter<
-            UploadQueueAdapter.ViewHolder>() {
+        UploadQueueAdapter.ViewHolder>() {
 
     private val items =
         mutableListOf<UploadQueueItem>()
@@ -48,31 +50,39 @@ class UploadQueueAdapter(
 
         ) {
 
-            binding.filename.text =
-                item.filename
+            val uploadedBytes = item.size * item.progress / 100
+            val context = itemView.context
 
-            binding.progress.progress =
-                item.progress
+            val uploaded =
+                Formatter.formatShortFileSize(context, uploadedBytes)
 
-            binding.status.text =
+            val total =
+                Formatter.formatShortFileSize(context, item.size)
 
-                when(item.status){
+            binding.fileSize.text = "$uploaded / $total"
 
-                    UploadStatus.QUEUED ->
-                        "Queued"
+            binding.filename.text = item.filename
 
-                    UploadStatus.UPLOADING ->
-                        "Uploading"
+            binding.progress.progress = item.progress
 
-                    UploadStatus.COMPLETED ->
-                        "Completed"
 
-                    UploadStatus.FAILED ->
-                        "Failed"
+            when (item.status) {
 
-                    else -> item.status.name
+                UploadStatus.QUEUED ->
+                    "Queued"
 
-                }
+                UploadStatus.UPLOADING ->
+                    "Uploading"
+
+                UploadStatus.COMPLETED ->
+                    "Completed"
+
+                UploadStatus.FAILED ->
+                    "Failed"
+
+                else -> item.status.name
+
+            }
 
             if (
                 item.status ==
@@ -135,4 +145,5 @@ class UploadQueueAdapter(
 
     override fun getItemCount() =
         items.size
+
 }

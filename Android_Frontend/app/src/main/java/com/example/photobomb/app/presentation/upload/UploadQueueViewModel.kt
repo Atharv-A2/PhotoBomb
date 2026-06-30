@@ -55,6 +55,8 @@ class UploadQueueViewModel(
 
                                         progress = it.progress,
 
+                                        size = it.size,
+
                                         status = it.status,
 
                                         errorMessage = it.errorMessage

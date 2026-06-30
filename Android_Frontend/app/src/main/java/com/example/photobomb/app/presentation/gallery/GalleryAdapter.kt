@@ -4,6 +4,7 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.view.isVisible
 import androidx.recyclerview.widget.RecyclerView
 import coil.load
 import com.example.photobomb.app.core.constants.ApiConstants
@@ -53,8 +54,9 @@ class GalleryAdapter(
             binding.imageThumbnail.load(
                 url
             )
-            if (item.mediaType.lowercase().contains("video"))
-                binding.videoSign.visibility = View.VISIBLE else View.GONE
+
+            binding.videoSign.isVisible =
+                item.mediaType.contains("video", ignoreCase = true)
 
             binding.root.setOnClickListener {
                 onClick(

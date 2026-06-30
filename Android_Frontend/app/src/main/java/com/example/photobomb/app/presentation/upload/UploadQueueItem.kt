@@ -10,6 +10,8 @@ data class UploadQueueItem(
 
     val progress: Int,
 
+    val size: Long,
+
     val status: UploadStatus,
 
     val errorMessage: String?
