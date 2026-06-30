@@ -1,14 +1,18 @@
 SUPPORTED_IMAGES = {
     "image/jpeg",
+    "image/jpg",
     "image/png",
     "image/webp",
     "image/heic",
+    "image/heif",
 }
 
 SUPPORTED_VIDEOS = {
     "video/mp4",
     "video/quicktime",
     "video/x-matroska",
+    "video/mkv",
+    "video/webm",
     "video/3gpp",
 }
 

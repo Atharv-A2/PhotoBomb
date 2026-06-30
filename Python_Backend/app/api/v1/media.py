@@ -3,6 +3,7 @@ from fastapi import Depends
 from fastapi import HTTPException
 from fastapi import UploadFile
 from fastapi import File
+from fastapi import Request
 from uuid import UUID
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
@@ -134,13 +135,21 @@ async def create_bulk_upload_sessions(
         session
     )
 
-    sessions = (
-        await service
-        .create_bulk_upload_sessions(
-            current_user.id,
-            request.files,
+    try:
+        
+        sessions = await (
+            service.create_bulk_upload_sessions(
+                current_user.id,
+                request.files,
+            )
         )
-    )
+
+    except ValueError as exc:
+
+        raise HTTPException(
+            status_code=400,
+            detail=str(exc),
+        )
 
     return (
         BulkUploadSessionResponse(
@@ -224,6 +233,7 @@ async def get_viewer(
 )
 async def stream_media(
     media_id: UUID,
+    request: Request,
     current_user: User =
         Depends(
             get_current_user
@@ -237,7 +247,8 @@ async def stream_media(
 
     return await (
         service.stream_media(
-            media_id
+            media_id,
+            request
         )
     )
 

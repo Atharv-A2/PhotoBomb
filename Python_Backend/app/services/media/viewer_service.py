@@ -1,9 +1,9 @@
 from fastapi import Response
 from pathlib import Path
 from fastapi import HTTPException
+from fastapi import Request
 from fastapi.responses import FileResponse
 from fastapi.responses import StreamingResponse
-from starlette.background import BackgroundTask
 
 from app.core.config.settings import (
     get_settings,
@@ -31,6 +31,12 @@ from app.services.storage.storage_service import (
 )
 from app.services.cache.cache_service import (
     CacheService,
+)
+from app.providers.telegram.client import (
+    TelegramClient
+)
+from app.services.streaming.range_stream import (
+    RangeStream,
 )
 
 settings = get_settings()
@@ -61,6 +67,8 @@ class ViewerService:
         )
 
         self.storage_service = StorageService()
+
+        self.telegram = TelegramClient()
 
         self.cache = CacheService()
 
@@ -147,6 +155,7 @@ class ViewerService:
     async def stream_media(
         self,
         media_id,
+        request: Request
     ):
         media = await self.media.get(
             media_id
@@ -186,11 +195,43 @@ class ViewerService:
                 cached_path,
             )
 
-        return FileResponse(
-            cached_path,
-            media_type=media.mime_type,
+        file_size = (
+            cached_path.stat().st_size
         )
-            
+
+        range_header = request.headers.get("range")
+
+        if range_header:
+
+            start, end = RangeStream.parse_range(
+                range_header,
+                file_size,
+            )
+
+            headers = {
+                "Accept-Ranges": "bytes",
+                "Content-Length": str(end - start + 1),
+                "Content-Range":
+                    f"bytes {start}-{end}/{file_size}",
+            }
+
+            return StreamingResponse(
+                RangeStream.stream(
+                    cached_path,
+                    start,
+                    end,
+                ),
+                status_code=206,
+                media_type=media.mime_type,
+                headers=headers,
+            )
+        
+        else: 
+            return FileResponse(
+                cached_path,
+                media_type=media.mime_type,
+            )
+        
 
     async def get_thumbnail(
         self,
