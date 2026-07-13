@@ -121,12 +121,7 @@ class GalleryActivity : AppCompatActivity() {
                 )
 
             adapter =
-                this@GalleryActivity.adapter.withLoadStateFooter(
-                    footer =
-                        GalleryLoadStateAdapter {
-                            this@GalleryActivity.adapter.retry()
-                        }
-                )
+                this@GalleryActivity.adapter
         }
 
         binding.uploadSummaryView.root.setOnClickListener {
@@ -142,12 +137,12 @@ class GalleryActivity : AppCompatActivity() {
         }
 
         binding.swipeRefresh.setOnRefreshListener {
-            adapter.refresh()
+            viewModel.refreshGallery()
         }
 
         lifecycleScope.launch {
 
-            adapter.loadStateFlow.collectLatest { loadState ->
+            adapter.addLoadStateListener { loadState ->
 
                 val isRefreshing = loadState.refresh is LoadState.Loading
 
@@ -239,7 +234,7 @@ class GalleryActivity : AppCompatActivity() {
                 if (activeUploads == 0 && completed > 0) {
                     lifecycleScope.launch {
                         delay(500)
-                        adapter.refresh()
+                        viewModel.refreshGallery()
                     }
                 }
             }

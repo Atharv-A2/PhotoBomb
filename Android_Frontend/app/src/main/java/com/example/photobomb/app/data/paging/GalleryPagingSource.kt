@@ -31,7 +31,7 @@ class GalleryPagingSource(
             val response =
                 api.getGallery(
 
-                    limit = PAGE_SIZE,
+                    limit = params.loadSize,
 
                     offset = offset
                 )
@@ -73,11 +73,11 @@ class GalleryPagingSource(
                     if (offset == 0)
                         null
                     else
-                        offset - PAGE_SIZE,
+                        maxOf(0, offset - PAGE_SIZE),
 
                 nextKey =
 
-                    if (items.isEmpty())
+                    if (items.size < PAGE_SIZE)
                         null
                     else
                         offset + PAGE_SIZE

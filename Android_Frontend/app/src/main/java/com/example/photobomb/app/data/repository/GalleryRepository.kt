@@ -28,8 +28,8 @@ class GalleryRepository(
             PagingConfig(
 
                 pageSize = PAGE_SIZE,
-                initialLoadSize = PAGE_SIZE,
-                prefetchDistance = PAGE_SIZE / 2,
+                initialLoadSize = PAGE_SIZE*2,
+                prefetchDistance = PAGE_SIZE,
                 enablePlaceholders = false
             )
 
