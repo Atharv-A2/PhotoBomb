@@ -10,9 +10,11 @@ import com.example.photobomb.app.data.local.entity.UploadStatus
 import com.example.photobomb.databinding.ItemUploadQueueBinding
 
 class UploadQueueAdapter(
-    private val onRetry:
 
-        (UploadQueueItem) -> Unit
+    private val onRetry: (UploadQueueItem) -> Unit,
+
+    private val onCancel: (UploadQueueItem) -> Unit
+
 ) : RecyclerView.Adapter<
         UploadQueueAdapter.ViewHolder>() {
 
@@ -50,7 +52,7 @@ class UploadQueueAdapter(
 
         ) {
 
-            val uploadedBytes = item.size * item.progress / 100
+            val uploadedBytes = item.size * item.progress / 100L
             val context = itemView.context
 
             val uploaded =
@@ -66,7 +68,7 @@ class UploadQueueAdapter(
             binding.progress.progress = item.progress
 
 
-            when (item.status) {
+            binding.status.text = when (item.status) {
 
                 UploadStatus.QUEUED ->
                     "Queued"
@@ -82,6 +84,10 @@ class UploadQueueAdapter(
 
                 else -> item.status.name
 
+            }
+
+            binding.buttonCancel.setOnClickListener {
+                onCancel(item)
             }
 
             if (

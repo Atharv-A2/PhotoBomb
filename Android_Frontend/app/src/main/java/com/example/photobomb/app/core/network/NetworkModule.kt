@@ -62,7 +62,7 @@ object NetworkModule {
 
         val logging =
             HttpLoggingInterceptor().apply {
-                level = HttpLoggingInterceptor.Level.BODY
+                level = HttpLoggingInterceptor.Level.HEADERS
             }
 
         val client =

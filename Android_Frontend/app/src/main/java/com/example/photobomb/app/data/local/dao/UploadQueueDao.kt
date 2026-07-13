@@ -49,15 +49,20 @@ interface UploadQueueDao {
     @Query(
         """
         DELETE
-
         FROM upload_queue
-
         WHERE uri=:uri
         """
     )
     suspend fun delete(
-
         uri: String
     )
+
+    @Query(
+        """
+    DELETE FROM upload_queue
+    WHERE status = 'COMPLETED'
+    """
+    )
+    suspend fun deleteCompleted()
 
 }

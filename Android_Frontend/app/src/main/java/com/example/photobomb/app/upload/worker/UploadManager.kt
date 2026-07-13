@@ -23,6 +23,46 @@ object UploadManager {
     private const val KEY_URIS =
         MediaUploadWorker.KEY_URIS
 
+    private fun enqueueWork(
+        context: Context,
+        uris: List<Uri>
+    ) {
+        for (uri in uris) {
+            val request =
+                OneTimeWorkRequestBuilder<MediaUploadWorker>()
+                    .setConstraints(
+                        Constraints.Builder()
+                            .setRequiredNetworkType(
+                                NetworkType.CONNECTED
+                            )
+                            .build()
+                    )
+
+                    .setInputData(
+                        Data.Builder()
+                            .putStringArray(
+                                KEY_URIS,
+                                arrayOf(uri.toString())
+                            )
+                            .build()
+                    )
+                    .setBackoffCriteria(
+                        BackoffPolicy.EXPONENTIAL,
+                        10,
+                        TimeUnit.SECONDS
+                    )
+                    .build()
+
+            WorkManager
+                .getInstance(context)
+                .enqueueUniqueWork(
+                    "media_upload_${uri}",
+                    ExistingWorkPolicy.REPLACE,
+                    request
+                )
+        }
+    }
+
     suspend fun enqueue(
 
         context: Context,
@@ -30,53 +70,6 @@ object UploadManager {
         uris: List<Uri>
 
     ) {
-
-        val request =
-
-            OneTimeWorkRequestBuilder<MediaUploadWorker>()
-
-                .setConstraints(
-
-                    Constraints.Builder()
-
-                        .setRequiredNetworkType(
-
-                            NetworkType.CONNECTED
-
-                        )
-
-                        .build()
-                )
-
-                .setInputData(
-
-                    Data.Builder()
-
-                        .putStringArray(
-
-                            KEY_URIS,
-
-                            uris.map {
-
-                                it.toString()
-
-                            }.toTypedArray()
-
-                        )
-
-                        .build()
-
-                )
-                .setBackoffCriteria(
-
-                    BackoffPolicy.EXPONENTIAL,
-
-                    10,
-
-                    TimeUnit.SECONDS
-                )
-
-                .build()
 
         val queueRepository =
             UploadQueueRepository(
@@ -121,17 +114,7 @@ object UploadManager {
                 )
             }
         )
-
-        WorkManager
-            .getInstance(context)
-            .enqueueUniqueWork(
-
-                "media_upload",
-
-                ExistingWorkPolicy.APPEND,
-
-                request
-            )
+        enqueueWork(context, uris)
     }
 
     suspend fun retry(
@@ -160,9 +143,17 @@ object UploadManager {
 
         queueRepository.save(entity)
 
-        enqueue(
+        enqueueWork(
             context,
             listOf( entity.uri.toUri() )
         )
+    }
+
+    suspend fun cancel(
+        context: Context,
+        entity: UploadQueueEntity
+    ) {
+        WorkManager.getInstance(context)
+            .cancelUniqueWork("media_upload_${entity.uri}")
     }
 }

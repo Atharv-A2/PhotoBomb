@@ -44,7 +44,7 @@ object NetworkClient {
             val logging =
                 HttpLoggingInterceptor().apply {
                     level =
-                        HttpLoggingInterceptor.Level.BODY
+                        HttpLoggingInterceptor.Level.HEADERS
                 }
 
             okHttpClient =

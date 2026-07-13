@@ -5,33 +5,46 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.core.view.isVisible
+import androidx.paging.PagingDataAdapter
+import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import coil.load
 import com.example.photobomb.app.core.constants.ApiConstants
 import com.example.photobomb.databinding.ItemGalleryBinding
 
 class GalleryAdapter(
-    private val onClick: (GalleryItemUiModel) -> Unit
-) :
-    RecyclerView.Adapter<GalleryAdapter.ViewHolder>() {
 
-    private val items =
-        mutableListOf<GalleryItemUiModel>()
+    private val onClick:
+        (GalleryItemUiModel) -> Unit
 
-    fun submit(
-        data:
-        List<GalleryItemUiModel>
-    ) {
+) : PagingDataAdapter<GalleryItemUiModel, GalleryAdapter.ViewHolder>(DIFF) {
 
-        items.clear()
+    companion object {
 
-        items.addAll(data)
-        Log.d(
-            "GalleryAdapter",
-            "Items = ${data.size}"
-        )
+        val DIFF =
 
-        notifyDataSetChanged()
+            object :
+                DiffUtil.ItemCallback<
+                        GalleryItemUiModel>() {
+
+                override fun areItemsTheSame(
+
+                    oldItem: GalleryItemUiModel,
+
+                    newItem: GalleryItemUiModel
+
+                ) =
+                    oldItem.id == newItem.id
+
+                override fun areContentsTheSame(
+
+                    oldItem: GalleryItemUiModel,
+
+                    newItem: GalleryItemUiModel
+
+                ) =
+                    oldItem == newItem
+            }
     }
 
     inner class ViewHolder(
@@ -51,9 +64,18 @@ class GalleryAdapter(
                         "api/v1/thumbnails/" +
                         item.thumbnailId
 
-            binding.imageThumbnail.load(
-                url
-            )
+            binding.imageThumbnail.load(url) {
+
+                crossfade(true)
+
+                placeholder(
+                    android.R.color.darker_gray
+                )
+
+                error(
+                    android.R.color.darker_gray
+                )
+            }
 
             binding.videoSign.isVisible =
                 item.mediaType.contains("video", ignoreCase = true)
@@ -86,11 +108,9 @@ class GalleryAdapter(
         holder: ViewHolder,
         position: Int
     ) {
-        holder.bind(
-            items[position]
-        )
+        getItem(position)?.let {
+            holder.bind(it)
+        }
     }
 
-    override fun getItemCount() =
-        items.size
 }

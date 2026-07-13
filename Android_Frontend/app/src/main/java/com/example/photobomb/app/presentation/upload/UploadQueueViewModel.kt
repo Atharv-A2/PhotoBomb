@@ -66,4 +66,10 @@ class UploadQueueViewModel(
                 }
         }
     }
+
+    fun deleteCompleted() {
+        viewModelScope.launch {
+            repository.deleteCompleted()
+        }
+    }
 }

@@ -1,5 +1,6 @@
 package com.example.photobomb.app.presentation.upload
 
+import android.content.DialogInterface
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
@@ -67,27 +68,52 @@ class UploadQueueBottomSheet :
     ) {
 
         adapter =
-            UploadQueueAdapter {
-                lifecycleScope.launch {
+            UploadQueueAdapter (
+                onRetry = {
+                    lifecycleScope.launch {
 
-                    val repository =
-                        UploadQueueRepository(
+                        val repository =
+                            UploadQueueRepository(
+                                DatabaseProvider
+                                    .getDatabase(requireContext())
+                                    .uploadQueueDao()
+                            )
+
+                        val entity =
+                            repository.get(
+                                it.uri
+                            ) ?: return@launch
+
+                        UploadManager.retry(
+                            requireContext(),
+                            entity
+                        )
+                    }
+                },
+
+                onCancel = {
+                    lifecycleScope.launch {
+
+                        val repository = UploadQueueRepository(
                             DatabaseProvider
                                 .getDatabase(requireContext())
                                 .uploadQueueDao()
                         )
 
-                    val entity =
-                        repository.get(
-                            it.uri
-                        ) ?: return@launch
+                        val entity =
+                            repository.get(
+                                it.uri
+                            ) ?: return@launch
 
-                    UploadManager.retry(
-                        requireContext(),
-                        entity
-                    )
+                        UploadManager.cancel(
+                            requireContext(),
+                            entity
+                        )
+
+                        repository.deleteUpload(it.uri)
+                    }
                 }
-            }
+            )
 
         binding.recyclerUploads.apply {
 
@@ -110,10 +136,13 @@ class UploadQueueBottomSheet :
         }
     }
 
+    override fun onDismiss(dialog: DialogInterface) {
+        super.onDismiss(dialog)
+        viewModel.deleteCompleted()
+    }
+
     override fun onDestroyView() {
-
         _binding = null
-
         super.onDestroyView()
     }
 }

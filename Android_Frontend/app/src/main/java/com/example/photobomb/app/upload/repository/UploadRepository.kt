@@ -1,6 +1,7 @@
 package com.example.photobomb.app.upload.repository
 
 import android.content.Context
+import android.util.Log
 import com.example.photobomb.app.upload.api.UploadApi
 import com.example.photobomb.app.upload.dto.ApiError
 import com.example.photobomb.app.upload.dto.BulkCreateUploadSessionRequest
@@ -80,6 +81,8 @@ class UploadRepository(
 
         ): UploadResult {
 
+        Log.d("UPLOAD", "uploadFile() started for ${media.displayName}")
+
         val part =
             MultipartUtils.createPart(
 
@@ -89,6 +92,8 @@ class UploadRepository(
 
                 media.displayName
                     ?: "Unknown",
+
+                media.size,
 
                 media.mimeType
                     ?: "application/octet-stream",

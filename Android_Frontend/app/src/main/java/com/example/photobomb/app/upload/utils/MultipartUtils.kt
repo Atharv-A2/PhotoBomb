@@ -2,57 +2,62 @@ package com.example.photobomb.app.upload.utils
 
 import android.content.Context
 import android.net.Uri
+import android.util.Log
 import com.example.photobomb.app.upload.network.ProgressRequestBody
+import okhttp3.MediaType
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
+import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.asRequestBody
+import okio.BufferedSink
 import java.io.File
+import java.io.IOException
 
 object MultipartUtils {
 
     fun createPart(
-
         context: Context,
-
         uri: Uri,
-
         filename: String,
-
+        totalSize: Long,
         mimeType: String,
-
         onProgress: (Int) -> Unit
+    ): MultipartBody.Part {
 
-        ): MultipartBody.Part {
+        val requestBody = object : RequestBody() {
 
-        val cacheFile = File(
-            context.cacheDir,
-            filename
-        )
+            override fun contentType(): MediaType? =
+                mimeType.toMediaTypeOrNull()
 
-        context.contentResolver
-            .openInputStream(uri)
-            ?.use { input ->
+            override fun writeTo(sink: BufferedSink) {
+                Log.d("UPLOAD", "writeTo() called")
+                val inputStream =
+                    context.contentResolver.openInputStream(uri)
+                        ?: throw IOException("Cannot open input stream")
 
-                cacheFile.outputStream().use {
+                inputStream.use { input ->
+                    val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+                    var uploaded = 0L
 
-                    input.copyTo(it)
+                    var read: Int
+
+                    while (input.read(buffer).also { read = it } != -1) {
+                        sink.write(buffer, 0, read)
+                        uploaded += read
+
+                        val progress =
+                            ((uploaded * 100) / totalSize).toInt()
+
+                        onProgress(progress)
+                    }
                 }
             }
-
-        val requestBody =
-            ProgressRequestBody(
-                cacheFile,
-                mimeType,
-                onProgress
-            )
+        }
 
         return MultipartBody.Part.createFormData(
-
-            "file",
-
-            filename,
-
-            requestBody
+            name = "file",
+            filename = filename,
+            body = requestBody
         )
     }
 }

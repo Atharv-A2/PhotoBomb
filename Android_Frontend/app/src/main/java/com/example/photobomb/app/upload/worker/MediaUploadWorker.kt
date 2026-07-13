@@ -15,6 +15,7 @@ import com.example.photobomb.app.data.local.entity.UploadStatus
 import com.example.photobomb.app.data.repository.UploadQueueRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
 
 class MediaUploadWorker(
@@ -49,20 +50,20 @@ class MediaUploadWorker(
 
     override suspend fun doWork(): Result {
 
-        val uriStrings =
-            inputData.getStringArray(
-                KEY_URIS
-            ) ?: return Result.failure()
-
-        val media =
-            uriStrings.map {
-                MediaReader.read(
-                    context = applicationContext,
-                    uri = it.toUri(),
-                )
-            }
-
         return try {
+
+            val uriStrings =
+                inputData.getStringArray(
+                    KEY_URIS
+                ) ?: return Result.failure()
+
+            val media =
+                uriStrings.map {
+                    MediaReader.read(
+                        context = applicationContext,
+                        uri = it.toUri(),
+                    )
+                }
 
             val repository =
                 UploadRepository(
@@ -104,6 +105,8 @@ class MediaUploadWorker(
             }
 
             for ((mediaItem, session) in media.zip(sessions)) {
+
+                coroutineContext.ensureActive()
 
                 val entity =
                     queue.get(

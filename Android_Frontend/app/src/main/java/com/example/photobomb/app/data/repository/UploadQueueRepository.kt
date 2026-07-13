@@ -55,4 +55,17 @@ class UploadQueueRepository(
     fun observeUploads() =
 
         dao.observe()
+
+
+    suspend fun deleteUpload(
+        uri: String
+    ) {
+        dao.delete(uri)
+    }
+
+
+    suspend fun deleteCompleted() {
+
+        dao.deleteCompleted()
+    }
 }

@@ -81,4 +81,7 @@ dependencies {
 
     implementation("androidx.fragment:fragment-ktx:1.6.0")
 
+    implementation("androidx.paging:paging-runtime:3.3.0")
+    implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
+
 }
