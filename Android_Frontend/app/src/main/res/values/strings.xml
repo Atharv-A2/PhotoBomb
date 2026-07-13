@@ -1,3 +1,17 @@
 <resources>
     <string name="app_name">PhotoBomb</string>
+
+    <string name="upload_status_queued">Queued</string>
+
+    <string name="upload_status_uploading">Uploading to server…</string>
+
+    <string name="upload_status_processing">Processing media…</string>
+
+    <string name="upload_status_uploading_telegram">Uploading to Telegram…</string>
+
+    <string name="upload_status_completed">Completed</string>
+
+    <string name="upload_status_failed">Failed</string>
+
+    <string name="upload_backend_processing">Waiting for backend…</string>
 </resources>

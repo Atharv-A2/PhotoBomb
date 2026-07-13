@@ -6,6 +6,7 @@ import com.example.photobomb.app.upload.api.UploadApi
 import com.example.photobomb.app.upload.dto.ApiError
 import com.example.photobomb.app.upload.dto.BulkCreateUploadSessionRequest
 import com.example.photobomb.app.upload.dto.CreateUploadSessionDto
+import com.example.photobomb.app.upload.dto.MediaStatusResponse
 import com.example.photobomb.app.upload.dto.UploadResult
 import com.example.photobomb.app.upload.dto.UploadSessionResponse
 import com.example.photobomb.app.upload.model.SelectedMedia
@@ -126,6 +127,29 @@ class UploadRepository(
         return response.body()
             ?: throw RuntimeException(
                 "Empty response"
+            )
+    }
+
+
+    suspend fun getMediaStatus(
+        mediaId: String
+    ): MediaStatusResponse {
+
+        val response =
+            api.getMediaStatus(
+                mediaId
+            )
+
+        if (!response.isSuccessful) {
+
+            throw RuntimeException(
+                "Unable to fetch media status."
+            )
+        }
+
+        return response.body()
+            ?: throw RuntimeException(
+                "Empty response."
             )
     }
 }

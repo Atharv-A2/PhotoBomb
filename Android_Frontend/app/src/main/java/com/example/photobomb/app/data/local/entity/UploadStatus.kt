@@ -6,6 +6,10 @@ enum class UploadStatus {
 
     UPLOADING,
 
+    PROCESSING,
+
+    UPLOADING_TELEGRAM,
+
     COMPLETED,
 
     FAILED

@@ -2,10 +2,12 @@ package com.example.photobomb.app.upload.api
 
 import com.example.photobomb.app.upload.dto.BulkCreateUploadSessionRequest
 import com.example.photobomb.app.upload.dto.BulkUploadSessionResponse
+import com.example.photobomb.app.upload.dto.MediaStatusResponse
 import com.example.photobomb.app.upload.dto.UploadResult
 import okhttp3.MultipartBody
 import retrofit2.Response
 import retrofit2.http.Body
+import retrofit2.http.GET
 import retrofit2.http.Multipart
 import retrofit2.http.POST
 import retrofit2.http.Part
@@ -32,4 +34,14 @@ interface UploadApi {
         file: MultipartBody.Part,
 
         ): Response<UploadResult>
+
+    @GET(
+        "api/v1/media/{mediaId}/status"
+    )
+    suspend fun getMediaStatus(
+
+        @Path("mediaId")
+        mediaId: String
+
+    ): Response<MediaStatusResponse>
 }

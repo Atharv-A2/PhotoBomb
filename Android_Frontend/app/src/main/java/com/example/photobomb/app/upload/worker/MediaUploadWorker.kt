@@ -17,6 +17,10 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
+import androidx.work.Data
+import androidx.work.ExistingWorkPolicy
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
 
 class MediaUploadWorker(
 
@@ -148,12 +152,20 @@ class MediaUploadWorker(
                         result.media_id
 
                     entity.status =
-                        UploadStatus.COMPLETED
+                        UploadStatus.PROCESSING
 
                     entity.progress =
                         100
 
                     queue.save(entity)
+
+                    //Hand over monitoring of uploading to telegram to the UploadStatusWorker
+                    enqueueStatusWorker(
+
+                        uri = entity.uri,
+
+                        mediaId = result.media_id
+                    )
 
                 } catch(e: Exception){
 
@@ -185,6 +197,58 @@ class MediaUploadWorker(
             hasFailures = true
             Result.failure()
         }
+    }
+
+
+    private fun enqueueStatusWorker(
+
+        uri: String,
+
+        mediaId: String
+
+    ) {
+
+        val request =
+
+            OneTimeWorkRequestBuilder<UploadStatusWorker>()
+
+                .setInputData(
+
+                    Data.Builder()
+
+                        .putString(
+
+                            UploadStatusWorker.KEY_URI,
+
+                            uri
+                        )
+
+                        .putString(
+
+                            UploadStatusWorker.KEY_MEDIA_ID,
+
+                            mediaId
+                        )
+
+                        .build()
+                )
+
+                .build()
+
+        WorkManager
+
+            .getInstance(
+                applicationContext
+            )
+
+            .enqueueUniqueWork(
+
+                "upload_status_$mediaId",
+
+                ExistingWorkPolicy.REPLACE,
+
+                request
+            )
     }
 
 }

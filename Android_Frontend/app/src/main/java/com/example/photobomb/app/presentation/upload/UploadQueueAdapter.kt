@@ -6,6 +6,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
+import com.example.photobomb.R
 import com.example.photobomb.app.data.local.entity.UploadStatus
 import com.example.photobomb.databinding.ItemUploadQueueBinding
 
@@ -71,46 +72,151 @@ class UploadQueueAdapter(
             binding.status.text = when (item.status) {
 
                 UploadStatus.QUEUED ->
-                    "Queued"
+
+                    context.getString(
+                        R.string.upload_status_queued
+                    )
 
                 UploadStatus.UPLOADING ->
-                    "Uploading"
+
+                    context.getString(
+                        R.string.upload_status_uploading
+                    )
+
+                UploadStatus.PROCESSING ->
+
+                    context.getString(
+                        R.string.upload_status_processing
+                    )
+
+                UploadStatus.UPLOADING_TELEGRAM ->
+
+                    context.getString(
+                        R.string.upload_status_uploading_telegram
+                    )
 
                 UploadStatus.COMPLETED ->
-                    "Completed"
+
+                    context.getString(
+                        R.string.upload_status_completed
+                    )
 
                 UploadStatus.FAILED ->
-                    "Failed"
 
-                else -> item.status.name
-
+                    context.getString(
+                        R.string.upload_status_failed
+                    )
             }
 
-            binding.buttonCancel.setOnClickListener {
-                onCancel(item)
-            }
+            when (item.status) {
 
-            if (
-                item.status ==
-                UploadStatus.FAILED
-            ) {
+                UploadStatus.UPLOADING -> {
 
-                binding.errorMessage.visibility = View.VISIBLE
+                    binding.progress.isIndeterminate = false
 
-                binding.buttonRetry.visibility = View.VISIBLE
+                    binding.progress.progress =
+                        item.progress
 
-                binding.errorMessage.text = item.errorMessage
+                    val uploadedBytes =
+                        item.size * item.progress / 100L
 
-                binding.buttonRetry.setOnClickListener {
-                    onRetry(item)
+                    val uploaded =
+                        Formatter.formatShortFileSize(
+                            context,
+                            uploadedBytes
+                        )
+
+                    val total =
+                        Formatter.formatShortFileSize(
+                            context,
+                            item.size
+                        )
+
+                    binding.fileSize.text =
+                        "$uploaded / $total"
                 }
 
-            } else {
+                UploadStatus.PROCESSING,
 
-                binding.errorMessage.visibility = View.GONE
+                UploadStatus.UPLOADING_TELEGRAM -> {
 
-                binding.buttonRetry.visibility = View.GONE
+                    binding.progress.isIndeterminate = true
+
+                    binding.fileSize.text =
+                        context.getString(
+                            R.string.upload_backend_processing
+                        )
+                }
+
+                UploadStatus.COMPLETED -> {
+
+                    binding.progress.isIndeterminate = false
+
+                    binding.progress.progress = 100
+
+                    binding.fileSize.text =
+                        Formatter.formatShortFileSize(
+                            context,
+                            item.size
+                        )
+                }
+
+                UploadStatus.QUEUED -> {
+
+                    binding.progress.isIndeterminate = false
+
+                    binding.progress.progress = 0
+
+                    binding.fileSize.text =
+                        Formatter.formatShortFileSize(
+                            context,
+                            item.size
+                        )
+                }
+
+                UploadStatus.FAILED -> {
+
+                    binding.progress.isIndeterminate = false
+
+                    binding.progress.progress = 0
+
+                    binding.fileSize.text =
+                        Formatter.formatShortFileSize(
+                            context,
+                            item.size
+                        )
+                }
             }
+
+            //For the Cancel Button Visibility
+            val canCancel = item.status == UploadStatus.QUEUED ||
+                    item.status == UploadStatus.UPLOADING
+
+            binding.buttonCancel.visibility =
+                if (canCancel) View.VISIBLE else View.GONE
+
+            binding.buttonCancel.setOnClickListener(
+                if (canCancel) {
+                    View.OnClickListener { onCancel(item) }
+                } else null
+            )
+
+            //For the Retry Button Visibility
+            val hasFailed = item.status == UploadStatus.FAILED
+
+            binding.errorMessage.visibility =
+                if (hasFailed) View.VISIBLE else View.GONE
+
+            binding.buttonRetry.visibility =
+                if (hasFailed) View.VISIBLE else View.GONE
+
+            binding.errorMessage.text = item.errorMessage
+
+            binding.buttonRetry.setOnClickListener(
+                if (hasFailed) {
+                    View.OnClickListener { onRetry(item) }
+                } else null
+            )
         }
     }
 

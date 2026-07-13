@@ -187,22 +187,56 @@ class GalleryActivity : AppCompatActivity() {
 
             uploadViewModel.uiState.collect { state ->
 
-                val uploading =
+                val activeUploads =
                     state.uploads.count {
-                        it.status == UploadStatus.QUEUED || it.status == UploadStatus.UPLOADING
+
+                        when (it.status) {
+                            UploadStatus.QUEUED,
+                            UploadStatus.UPLOADING,
+                            UploadStatus.PROCESSING,
+                            UploadStatus.UPLOADING_TELEGRAM -> true
+                            UploadStatus.COMPLETED,
+                            UploadStatus.FAILED -> false
+                        }
                     }
 
                 binding.uploadSummaryView.root.isVisible =
-                    uploading > 0
+                    activeUploads > 0
+
+                val uploading =
+                    state.uploads.count {
+                        it.status == UploadStatus.UPLOADING
+                    }
+
+                val processing =
+                    state.uploads.count {
+                        it.status == UploadStatus.PROCESSING
+                    }
+
+                val telegram =
+                    state.uploads.count {
+                        it.status == UploadStatus.UPLOADING_TELEGRAM
+                    }
+
+                val queued =
+                    state.uploads.count {
+                        it.status == UploadStatus.QUEUED
+                    }
 
                 binding.uploadSummaryView.textSummary.text =
-                    "Uploading $uploading items"
+                    when {
+                        uploading > 0 -> "Uploading $uploading item(s)"
+                        processing > 0 -> "Processing $processing item(s)"
+                        telegram > 0 -> "Uploading to Telegram $telegram item(s)"
+                        queued > 0 -> "Queued $queued item(s)"
+                        else -> "Uploading"
+                    }
 
                 val completed = state.uploads.count {
                         it.status == UploadStatus.COMPLETED
                     }
 
-                if (uploading == 0 && completed > 0) {
+                if (activeUploads == 0 && completed > 0) {
                     lifecycleScope.launch {
                         delay(500)
                         adapter.refresh()
