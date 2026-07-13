@@ -91,9 +91,8 @@ class MediaRepository:
                 == MediaStatus.AVAILABLE,
             )
             .order_by(
-                desc(
-                    Media.capture_time
-                ).nulls_last()
+                desc(Media.capture_time).nulls_last(),
+                desc(Media.created_at),
             )
             .limit(limit)
             .offset(offset)

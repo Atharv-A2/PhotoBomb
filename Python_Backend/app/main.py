@@ -12,6 +12,10 @@ from app.api.v1.auth import router as auth_router
 from app.api.v1.media import router as media_router
 from app.api.v1.thumbnails import router as thumbnails_router
 
+from app.providers.telegram.lifecycle import (
+    TelegramLifecycle,
+)
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -26,7 +30,14 @@ async def lifespan(app: FastAPI):
         exist_ok=True,
     )
 
-    yield
+    telegram = TelegramLifecycle.instance()
+
+    try:
+        telegram.start()
+        yield
+
+    finally:
+        telegram.shutdown()
 
 
 configure_logging()

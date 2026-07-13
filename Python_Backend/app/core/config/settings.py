@@ -26,7 +26,14 @@ class Settings(BaseSettings):
     telegram_bot_token: str = Field(default="")
     telegram_media_chat_id: str = Field(default="")
 
+
+    telegram_api_id: int = Field(default=0)
+    telegram_api_hash: str = Field(default="")
+    telegram_phone_number: str = Field(default="")
+
     telegram_api_base: str = ( "https://api.telegram.org" )
+
+    telegram_string_session: str | None = None
 
     temp_storage_path: Path = (
         BASE_DIR / "storage" / "temp"

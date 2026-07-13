@@ -20,6 +20,9 @@ from app.db.repositories.media_storage_repository import (
 from app.schemas.media.viewer import (
     ViewerResponse,
 )
+from app.schemas.media.status import (
+    MediaStatusResponse,
+)
 from app.schemas.media.detail import (
     MediaDetailResponse,
 )
@@ -32,11 +35,8 @@ from app.services.storage.storage_service import (
 from app.services.cache.cache_service import (
     CacheService,
 )
-from app.providers.telegram.client import (
-    TelegramClient
-)
-from app.services.streaming.range_stream import (
-    RangeStream,
+from app.providers.telegram.models import (
+    TelegramRange,
 )
 
 settings = get_settings()
@@ -68,9 +68,8 @@ class ViewerService:
 
         self.storage_service = StorageService()
 
-        self.telegram = TelegramClient()
-
         self.cache = CacheService()
+
 
     async def get_detail(
         self,
@@ -155,7 +154,7 @@ class ViewerService:
     async def stream_media(
         self,
         media_id,
-        request: Request
+        request: Request,
     ):
         media = await self.media.get(
             media_id
@@ -166,71 +165,188 @@ class ViewerService:
                 "Media not found"
             )
 
-        storage = await (
-            self.storage.get_by_media_id(
-                media_id
-            )
+        storage = await self.storage.get_by_media_id(
+            media_id
         )
 
         if storage is None:
             raise ValueError(
                 "Storage not found"
             )
-        
-        extension = Path(
-            media.original_filename
-        ).suffix
 
-        cached_path = (
-            self.cache.get_cached_path(
-                storage.storage_key,
-                extension,
-            )
-        )
+        ####################################################################
+        # IMAGE
+        #
+        # Cache locally
+        ####################################################################
 
-        if not cached_path.exists():
+        if media.media_type.value == "IMAGE":
 
-            self.storage_service.download_to_path(
-                storage.storage_metadata,
-                cached_path,
-            )
+            extension = Path(
+                media.original_filename
+            ).suffix
 
-        file_size = (
-            cached_path.stat().st_size
-        )
-
-        range_header = request.headers.get("range")
-
-        if range_header:
-
-            start, end = RangeStream.parse_range(
-                range_header,
-                file_size,
+            cached_path = (
+                self.cache.get_cached_path(
+                    storage.storage_key,
+                    extension,
+                )
             )
 
-            headers = {
-                "Accept-Ranges": "bytes",
-                "Content-Length": str(end - start + 1),
-                "Content-Range":
-                    f"bytes {start}-{end}/{file_size}",
-            }
+            if not cached_path.exists():
 
-            return StreamingResponse(
-                RangeStream.stream(
+                self.storage_service.download_to_path(
+                    storage.storage_metadata,
                     cached_path,
-                    start,
-                    end,
-                ),
-                status_code=206,
-                media_type=media.mime_type,
-                headers=headers,
-            )
-        
-        else: 
+                )
+
             return FileResponse(
+
                 cached_path,
+
                 media_type=media.mime_type,
             )
+
+        ####################################################################
+        # VIDEO
+        #
+        # Direct Telegram Streaming
+        ####################################################################
+
+        file_size = int(
+            storage.storage_metadata[
+                "file_size"
+            ]
+        )
+
+        range_header = request.headers.get(
+            "range"
+        )
+
+        byte_range = TelegramRange.from_header(
+
+            range_header,
+
+            file_size,
+        )
+
+        headers = {
+
+            "Accept-Ranges": "bytes",
+
+            "Content-Length": str(
+                byte_range.length
+            ),
+
+            "Content-Range":
+
+                (
+                    f"bytes "
+                    f"{byte_range.start}-"
+                    f"{byte_range.end}/"
+                    f"{file_size}"
+                ),
+
+            "Cache-Control":
+                "no-cache",
+        }
+
+        return StreamingResponse(
+
+            self.storage_service.stream_file(
+
+                storage.storage_metadata,
+
+                byte_range,
+            ),
+
+            status_code=206,
+
+            media_type=media.mime_type,
+
+            headers=headers,
+        )
+    
+
+    # async def stream_media(
+    #     self,
+    #     media_id,
+    #     request: Request
+    # ):
+    #     media = await self.media.get(
+    #         media_id
+    #     )
+
+    #     if media is None:
+    #         raise ValueError(
+    #             "Media not found"
+    #         )
+
+    #     storage = await (
+    #         self.storage.get_by_media_id(
+    #             media_id
+    #         )
+    #     )
+
+    #     if storage is None:
+    #         raise ValueError(
+    #             "Storage not found"
+    #         )
+        
+    #     extension = Path(
+    #         media.original_filename
+    #     ).suffix
+
+    #     cached_path = (
+    #         self.cache.get_cached_path(
+    #             storage.storage_key,
+    #             extension,
+    #         )
+    #     )
+
+    #     if not cached_path.exists():
+
+    #         self.storage_service.download_to_path(
+    #             storage.storage_metadata,
+    #             cached_path,
+    #         )
+
+    #     file_size = (
+    #         cached_path.stat().st_size
+    #     )
+
+    #     range_header = request.headers.get("range")
+
+    #     if range_header:
+
+    #         start, end = RangeStream.parse_range(
+    #             range_header,
+    #             file_size,
+    #         )
+
+    #         headers = {
+    #             "Accept-Ranges": "bytes",
+    #             "Content-Length": str(end - start + 1),
+    #             "Content-Range":
+    #                 f"bytes {start}-{end}/{file_size}",
+    #         }
+
+    #         return StreamingResponse(
+    #             RangeStream.stream(
+    #                 cached_path,
+    #                 start,
+    #                 end,
+    #             ),
+    #             status_code=206,
+    #             media_type=media.mime_type,
+    #             headers=headers,
+    #         )
+        
+    #     else: 
+    #         return FileResponse(
+    #             cached_path,
+    #             media_type=media.mime_type,
+    #         )
         
 
     async def get_thumbnail(
@@ -262,4 +378,25 @@ class ViewerService:
         return FileResponse(
             path,
             media_type="image/webp",
+        )
+    
+
+    async def get_status(
+        self,
+        media_id: str,
+    ):
+        media = await self.media.get(
+            media_id
+        )
+
+        if media is None:
+            raise ValueError(
+                "Media not found"
+            )
+
+        return MediaStatusResponse(
+
+            media_id=str(media.id),
+
+            status=media.status.value,
         )

@@ -12,3 +12,7 @@ storage/
 logs/
 
 *.pyc
+
+telegram_session*
+
+tdlib_data*

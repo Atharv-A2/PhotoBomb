@@ -31,6 +31,9 @@ from app.schemas.media.request import (
 from app.schemas.media.response import (
     BulkUploadSessionResponse,
 )
+from app.schemas.media.status import (
+    MediaStatusResponse,
+)
 from app.services.media.gallery_service import (
     GalleryService,
 )
@@ -272,5 +275,24 @@ async def get_thumbnail(
     return await (
         service.get_thumbnail(
             thumbnail_id
+        )
+    )
+
+
+@router.get(
+    "/{media_id}/status",
+    response_model=MediaStatusResponse,
+)
+async def get_status(
+    media_id: UUID,
+    session: AsyncSession = Depends(
+        get_db
+        ),
+):
+    service = ViewerService(session)
+
+    return await (
+        service.get_status(
+            media_id
         )
     )

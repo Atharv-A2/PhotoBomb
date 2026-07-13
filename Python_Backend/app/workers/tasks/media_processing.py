@@ -218,6 +218,12 @@ def process_media_sync(
                 )
             )
 
+            logger.info(
+                "Uploading media %s to %s",
+                media.id,
+                provider.type.value,
+            )
+
             upload_result = (
                 storage_provider
                 .upload_file(
@@ -226,6 +232,11 @@ def process_media_sync(
                     ),
                     media.media_type,
                 )
+            )
+
+            logger.info(
+                "Upload complete %s",
+                upload_result.storage_key,
             )
 
             repo_storage = (
@@ -254,8 +265,16 @@ def process_media_sync(
                 media.temp_path
             )
 
-            if temp_path.exists():
-                temp_path.unlink()
+            try:
+                if temp_path.exists():
+                    temp_path.unlink()
+
+            except Exception:
+                logger.warning(
+                    "Unable to delete temp file %s",
+                    temp_path,
+                    exc_info=True,
+                )
 
             upload_session = (
                 upload_repo
@@ -285,8 +304,11 @@ def process_media_sync(
         except Exception as exc:
 
             logger.exception(
-                "Media processing failed: %s",
+                "Media processing failed. "
+                "media=%s "
+                "session=%s",
                 media_id,
+                upload_session_id,
             )
 
             session.rollback()
