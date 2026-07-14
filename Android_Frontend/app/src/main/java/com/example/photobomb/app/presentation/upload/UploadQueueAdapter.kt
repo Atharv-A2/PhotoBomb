@@ -1,6 +1,7 @@
 package com.example.photobomb.app.presentation.upload
 
 import android.content.Context
+import android.graphics.Color
 import android.text.format.Formatter
 import android.view.LayoutInflater
 import android.view.View
@@ -159,6 +160,7 @@ class UploadQueueAdapter(
                             context,
                             item.size
                         )
+                    binding.status.setTextColor(Color.GREEN)
                 }
 
                 UploadStatus.QUEUED -> {

@@ -11,4 +11,6 @@ data class SelectedMedia(
     val mimeType: String?,
 
     val size: Long,
+
+    val lastModified: String?,
 )

@@ -5,6 +5,7 @@ import com.example.photobomb.app.upload.dto.BulkUploadSessionResponse
 import com.example.photobomb.app.upload.dto.MediaStatusResponse
 import com.example.photobomb.app.upload.dto.UploadResult
 import okhttp3.MultipartBody
+import okhttp3.RequestBody
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
@@ -32,6 +33,9 @@ interface UploadApi {
 
         @Part
         file: MultipartBody.Part,
+
+        @Part("last_modified_at")
+        lastModifiedAt: RequestBody?,
 
         ): Response<UploadResult>
 

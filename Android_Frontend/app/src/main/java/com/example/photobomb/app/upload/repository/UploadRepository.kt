@@ -12,6 +12,8 @@ import com.example.photobomb.app.upload.dto.UploadSessionResponse
 import com.example.photobomb.app.upload.model.SelectedMedia
 import com.example.photobomb.app.upload.utils.MultipartUtils
 import com.google.gson.Gson
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.RequestBody.Companion.toRequestBody
 import retrofit2.Response
 
 class UploadRepository(
@@ -102,12 +104,20 @@ class UploadRepository(
                 onProgress
             )
 
+        val lastModifiedBody =
+            media.lastModified
+                ?.toRequestBody(
+                    "text/plain".toMediaType()
+                )
+
         val response =
             api.uploadFile(
 
                 session.upload_session_id,
 
                 part,
+
+                lastModifiedBody
             )
 
         if (!response.isSuccessful) {

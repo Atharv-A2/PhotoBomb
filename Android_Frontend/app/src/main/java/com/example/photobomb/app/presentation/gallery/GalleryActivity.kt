@@ -62,9 +62,7 @@ class GalleryActivity : AppCompatActivity() {
         registerForActivityResult(
 
             ActivityResultContracts
-                .PickMultipleVisualMedia(
-                    100
-                )
+                .OpenMultipleDocuments()
 
         ) { uris ->
 
@@ -72,7 +70,16 @@ class GalleryActivity : AppCompatActivity() {
                 return@registerForActivityResult
             }
 
+            uris.forEach { uri ->
+
+                contentResolver.takePersistableUriPermission(
+                    uri,
+                    android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION
+                )
+            }
+
             lifecycleScope.launch {
+
                 UploadManager.enqueue(
                     this@GalleryActivity,
                     uris
@@ -244,13 +251,9 @@ class GalleryActivity : AppCompatActivity() {
         binding.fabUpload.setOnClickListener {
 
             picker.launch(
-
-                PickVisualMediaRequest(
-
-                    ActivityResultContracts
-                        .PickVisualMedia
-                        .ImageAndVideo
-
+                arrayOf(
+                    "image/*",
+                    "video/*"
                 )
             )
         }
