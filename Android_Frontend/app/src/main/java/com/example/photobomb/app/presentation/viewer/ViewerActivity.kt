@@ -11,6 +11,8 @@ import com.example.photobomb.app.data.repository.ViewerRepository
 import com.example.photobomb.databinding.ActivityViewerBinding
 import kotlinx.coroutines.launch
 import androidx.media3.common.MediaItem
+import androidx.media3.common.PlaybackException
+import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
@@ -117,12 +119,21 @@ class ViewerActivity :
                     binding.imageViewer.visibility =
                         View.VISIBLE
 
+                    binding.loadingSpinner.visibility = View.VISIBLE
+
                     binding.imageViewer.load(
                         streamUrl,
-                        ImageLoaderFactory.get(
-                            applicationContext
+                        ImageLoaderFactory.get(applicationContext)
+                    ) {
+                        listener(
+                            onSuccess = { _, _ ->
+                                binding.loadingSpinner.visibility = View.GONE
+                            },
+                            onError = { _, _ ->
+                                binding.loadingSpinner.visibility = View.GONE
+                            }
                         )
-                    )
+                    }
 
                 } else {
 
@@ -139,6 +150,8 @@ class ViewerActivity :
                             applicationContext
                         )
 
+                    binding.loadingSpinner.visibility = View.VISIBLE
+
                     player =
                         ExoPlayer.Builder(
                             this@ViewerActivity
@@ -149,6 +162,29 @@ class ViewerActivity :
                                 )
                             )
                             .build()
+
+                    player?.addListener(object : Player.Listener {
+
+                        override fun onPlaybackStateChanged(state: Int) {
+                            when (state) {
+                                Player.STATE_BUFFERING -> {
+                                    binding.loadingSpinner.visibility = View.VISIBLE
+                                }
+
+                                Player.STATE_READY -> {
+                                    binding.loadingSpinner.visibility = View.GONE
+                                }
+
+                                Player.STATE_ENDED -> {
+                                    binding.loadingSpinner.visibility = View.GONE
+                                }
+                            }
+                        }
+
+                        override fun onPlayerError(error: PlaybackException) {
+                            binding.loadingSpinner.visibility = View.GONE
+                        }
+                    })
 
                     binding.videoViewer.player =
                         player

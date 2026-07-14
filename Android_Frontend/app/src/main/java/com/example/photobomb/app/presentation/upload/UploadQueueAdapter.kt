@@ -190,7 +190,8 @@ class UploadQueueAdapter(
 
             //For the Cancel Button Visibility
             val canCancel = item.status == UploadStatus.QUEUED ||
-                    item.status == UploadStatus.UPLOADING
+                    item.status == UploadStatus.UPLOADING ||
+                    item.status == UploadStatus.FAILED
 
             binding.buttonCancel.visibility =
                 if (canCancel) View.VISIBLE else View.GONE

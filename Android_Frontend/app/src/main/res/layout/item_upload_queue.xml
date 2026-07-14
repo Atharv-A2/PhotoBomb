@@ -66,6 +66,7 @@
             android:id="@+id/errorMessage"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:textColor="@android:color/holo_red_light"
             android:layout_weight="1" />
 
         <TextView
