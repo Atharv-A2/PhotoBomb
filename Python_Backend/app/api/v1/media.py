@@ -2,9 +2,10 @@ from fastapi import APIRouter
 from fastapi import Depends
 from fastapi import HTTPException
 from fastapi import UploadFile
-from fastapi import File
+from fastapi import File, Form
 from fastapi import Request
 from uuid import UUID
+from datetime import datetime
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
 )
@@ -90,6 +91,8 @@ async def upload_file(
     file: UploadFile = File(
         ...
     ),
+    last_modified_at: datetime | None = 
+        Form(None),
     current_user: User =
         Depends(
             get_current_user
@@ -107,6 +110,7 @@ async def upload_file(
                 upload_session_id,
                 current_user.id,
                 file,
+                last_modified_at,
             )
         )
 

@@ -8,28 +8,45 @@ from PIL import Image
 
 class ImageMetadataExtractor:
 
+    DATE_CANDIDATES = [
+        # Original capture time (preferred)
+        ("DateTimeOriginal", "OffsetTimeOriginal"),
+
+        # Image creation time
+        ("CreateDate", "OffsetTime"),
+
+        # Digitization time
+        ("DateTimeDigitized", "OffsetTimeDigitized"),
+
+        # Common for HEIC/QuickTime
+        ("MediaCreateDate", None),
+        ("TrackCreateDate", None),
+
+        # GPS timestamp
+        ("GPSDateTime", None),
+
+        # Editable metadata
+        ("ModifyDate", "OffsetTime"),
+
+        # Last resort
+        ("FileCreateDate", None),
+        ("FileModifyDate", None),
+    ]
+
     def extract(
         self,
         path: Path,
     ):
-        image = Image.open(path)
-
-        width, height = image.size
-
-        capture_time = (
-            self._extract_capture_time(
-                path
-            )
-        )
+        metadata = self._read_metadata(path)
 
         return {
-            "width": width,
-            "height": height,
-            "capture_time":
-                capture_time,
+            "width": metadata.get("ImageWidth"),
+            "height": metadata.get("ImageHeight"),
+            "capture_time": self._extract_capture_time(metadata),
         }
+    
 
-    def _extract_capture_time(
+    def _read_metadata(
         self,
         path: Path,
     ):
@@ -38,41 +55,85 @@ class ImageMetadataExtractor:
                 [
                     "exiftool",
                     "-json",
-                    str(path),
+                    "-n",
+                    path.as_posix(),
                 ],
                 capture_output=True,
                 text=True,
                 check=True,
             )
 
-            metadata = json.loads(
-                result.stdout
-            )[0]
+            return json.loads(result.stdout)[0]
+    
+        except (
+            subprocess.CalledProcessError,
+            json.JSONDecodeError,
+            FileNotFoundError,
+        ) as exc:
+            raise RuntimeError(
+                f"Failed to read metadata from {path}"
+            ) from exc
+    
 
-            candidates = [
-                "DateTimeOriginal",
-                "CreateDate",
-                "DateTimeDigitized",
-                "ModifyDate",
-            ]
+    def _extract_capture_time(
+        self,
+        metadata: dict,
+    ):
+        for field, offset_field in self.DATE_CANDIDATES:
+            value = metadata.get(field)
 
-            for field in candidates:
-                value = metadata.get(
-                    field
-                )
+            if not value:
+                continue
 
-                if not value:
-                    continue
+            capture_time = self._parse_datetime(
+                value=value,
+                offset=(
+                    metadata.get(offset_field)
+                    if offset_field
+                    else None
+                ),
+            )
 
+            if capture_time is not None:
+                return capture_time
+
+        return None
+
+
+    def _parse_datetime(
+        self,
+        value: str,
+        offset: str | None,
+    ):
+        value = value.strip()
+
+        # ISO-8601 (HEIC, QuickTime, etc.)
+        try:
+            return datetime.fromisoformat(
+                value.replace("Z", "+00:00")
+            )
+        except ValueError:
+            pass
+
+        # Standard EXIF
+        try:
+            dt = datetime.strptime(
+                value,
+                "%Y:%m:%d %H:%M:%S",
+            )
+
+            if offset:
                 try:
-                    return datetime.strptime(
-                        value,
-                        "%Y:%m:%d %H:%M:%S",
+                    return datetime.fromisoformat(
+                        dt.strftime(
+                            "%Y-%m-%dT%H:%M:%S"
+                        )
+                        + offset
                     )
                 except ValueError:
                     pass
 
-        except Exception:
-            pass
+            return dt
 
-        return None
+        except ValueError:
+            return None

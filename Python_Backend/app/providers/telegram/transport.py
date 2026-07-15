@@ -69,7 +69,8 @@ class TelegramTransport:
                 chat_id,
 
                 path,
-            )
+            ),
+            timeout = self._worker.UPLOAD_TIMEOUT
         )
     
 

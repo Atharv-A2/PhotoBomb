@@ -93,6 +93,8 @@ class TelegramWorker:
 
     RPC_TIMEOUT = 120
 
+    UPLOAD_TIMEOUT = 900
+
     STREAM_IDLE_TIMEOUT = 300
 
     MESSAGE_CACHE_SIZE = 1000

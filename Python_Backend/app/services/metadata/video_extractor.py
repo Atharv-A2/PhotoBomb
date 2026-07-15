@@ -12,6 +12,18 @@ settings = get_settings()
 
 class VideoMetadataExtractor:
 
+    DATE_CANDIDATES = [
+        "creation_time",
+        "com.apple.quicktime.creationdate",
+        "com.apple.quicktime.creation_time",
+        "MediaCreateDate",
+        "TrackCreateDate",
+        "CreateDate",
+        "CreationTime",
+        "Encoded_Date",
+        "Tagged_Date",
+    ]
+
     def extract(
         self,
         path: Path,
@@ -22,8 +34,34 @@ class VideoMetadataExtractor:
             "quiet",
             "-print_format",
             "json",
-            "-show_streams",
-            "-show_format",
+            "-show_entries",
+            (
+                "stream=codec_type,width,height,duration:"
+
+                "stream_tags="
+                "creation_time,"
+                "com.apple.quicktime.creationdate,"
+                "com.apple.quicktime.creation_time,"
+                "CreationTime,"
+                "CreateDate,"
+                "MediaCreateDate,"
+                "TrackCreateDate,"
+                "Encoded_Date,"
+                "Tagged_Date:"
+
+                "format=duration:"
+
+                "format_tags="
+                "creation_time,"
+                "com.apple.quicktime.creationdate,"
+                "com.apple.quicktime.creation_time,"
+                "CreationTime,"
+                "CreateDate,"
+                "MediaCreateDate,"
+                "TrackCreateDate,"
+                "Encoded_Date,"
+                "Tagged_Date"
+            ),
             str(path),
         ]
 
@@ -43,58 +81,32 @@ class VideoMetadataExtractor:
         duration = None
         capture_time = None
 
-        for stream in metadata.get(
-            "streams",
-            [],
-        ):
-            if (
-                stream.get(
+        video_stream = next(
+            (
+                stream
+                for stream in metadata.get(
+                    "streams",
+                    [],
+                )
+                if stream.get(
                     "codec_type"
                 )
                 == "video"
-            ):
-                width = stream.get(
-                    "width"
-                )
+            ),
+            None,
+        )
 
-                height = stream.get(
-                    "height"
-                )
-
-                duration_str = (
-                    stream.get(
-                        "duration"
-                    )
-                )
-
-                if duration_str:
-                    duration = float(
-                        duration_str
-                    )
-
-                tags = stream.get(
-                    "tags",
-                    {}
-                )
-
-                capture_time = (
-                    self._parse_date(
-                        tags
-                    )
-                )
-
-                break
-
-        if duration is None:
-            format_data = metadata.get(
-                "format",
-                {}
+        if video_stream:
+            width = video_stream.get(
+                "width"
             )
 
-            duration_str = (
-                format_data.get(
-                    "duration"
-                )
+            height = video_stream.get(
+                "height"
+            )
+
+            duration_str = video_stream.get(
+                "duration"
             )
 
             if duration_str:
@@ -102,36 +114,50 @@ class VideoMetadataExtractor:
                     duration_str
                 )
 
-            if capture_time is None:
-                capture_time = (
-                    self._parse_date(
-                        format_data.get(
-                            "tags",
-                            {}
-                        )
+            capture_time = (
+                self._parse_date(
+                    video_stream.get(
+                        "tags",
+                        {},
                     )
                 )
+            )
+
+        format_data = metadata.get(
+            "format",
+            {},
+        )
+
+        if duration is None:
+            duration_str = format_data.get(
+                "duration"
+            )
+
+            if duration_str is not None:
+                duration = float(
+                    duration_str
+                )
+
+        if capture_time is None:
+            capture_time = self._parse_date(
+                format_data.get(
+                    "tags",
+                    {},
+                )
+            )
 
         return {
             "width": width,
             "height": height,
-            "duration":
-                duration,
-            "capture_time":
-                capture_time,
+            "duration": duration,
+            "capture_time": capture_time,
         }
-
+    
     def _parse_date(
         self,
-        tags,
+        tags: dict,
     ):
-        candidates = [
-            "creation_time",
-            "com.apple.quicktime.creationdate",
-            "CreationTime",
-        ]
-
-        for field in candidates:
+        for field in self.DATE_CANDIDATES:
             value = tags.get(
                 field
             )
@@ -146,7 +172,7 @@ class VideoMetadataExtractor:
                         "+00:00",
                     )
                 )
-            except Exception:
-                pass
+            except ValueError:
+                continue
 
         return None

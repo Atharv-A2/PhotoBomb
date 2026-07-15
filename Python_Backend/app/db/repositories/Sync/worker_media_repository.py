@@ -31,9 +31,13 @@ class WorkerMediaRepository:
         media.width = metadata.get("width")
         media.height = metadata.get("height")
         media.duration = metadata.get("duration")
-        media.capture_time = metadata.get(
+
+        #if the exiftool can't find the datetime itself, then it'll keep the one from the android last_modified
+        processed_capture_time = metadata.get(
             "capture_time"
         )
+        if processed_capture_time != None:
+            media.capture_time = processed_capture_time
 
         self.session.flush()
 

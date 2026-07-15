@@ -142,6 +142,7 @@ class UploadService:
         upload_session_id,
         user_id,
         file: UploadFile,
+        last_modified_at: datetime | None,
     ):
         upload_session = (
             await self.upload_sessions.get(
@@ -251,6 +252,9 @@ class UploadService:
             temp_path=str(
                 final_path
             ),
+            capture_time=
+                last_modified_at    #setting the last_modified from android first, before metadata extraction
+            
         )
 
         await self.media.create(
