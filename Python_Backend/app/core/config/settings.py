@@ -57,6 +57,20 @@ class Settings(BaseSettings):
     ffprobe_binary: str = "ffprobe"
     exiftool_binary: str = "exiftool"
 
+    VIDEO_CACHE_ENABLED: bool = True
+
+    VIDEO_CACHE_DIRECTORY: Path = (
+        BASE_DIR / "storage" / "cache" / "videos"
+    )
+
+    VIDEO_CACHE_TEMP_DIRECTORY: Path = (
+        BASE_DIR / "storage" / "cache" / "temp"
+    )
+
+    VIDEO_CACHE_LIMIT_GB: int = 5
+
+    VIDEO_CACHE_FLUSH_INTERVAL: int = 4 * 1024 * 1024
+
 
 @lru_cache
 def get_settings() -> Settings:

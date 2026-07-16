@@ -32,11 +32,12 @@ from app.db.repositories.media_thumbnail_repository import (
 from app.services.storage.storage_service import (
     StorageService,
 )
-from app.services.cache.cache_service import (
-    CacheService,
-)
 from app.providers.telegram.models import (
     TelegramRange,
+)
+
+from app.services.cache.media_cache_manager import (
+    get_media_cache_manager
 )
 
 settings = get_settings()
@@ -68,7 +69,7 @@ class ViewerService:
 
         self.storage_service = StorageService()
 
-        self.cache = CacheService()
+        self.cache = get_media_cache_manager()
 
 
     async def get_detail(
@@ -186,19 +187,11 @@ class ViewerService:
                 media.original_filename
             ).suffix
 
-            cached_path = (
-                self.cache.get_cached_path(
-                    storage.storage_key,
-                    extension,
-                )
+            cached_path = await self.cache.get_ensure_cached_path(
+                storage.storage_key,
+                extension,
+                storage.storage_metadata
             )
-
-            if not cached_path.exists():
-
-                self.storage_service.download_to_path(
-                    storage.storage_metadata,
-                    cached_path,
-                )
 
             return FileResponse(
 
@@ -248,16 +241,23 @@ class ViewerService:
                 ),
 
             "Cache-Control":
-                "no-cache",
+                "private, max-age=0",
+
+            "Content-Length":
+                str(byte_range.length),
+
+            "ETag": storage.storage_key,
         }
 
         return StreamingResponse(
 
-            self.storage_service.stream_file(
+            self.cache.stream(
 
-                storage.storage_metadata,
+                storage_key=storage.storage_key,
 
-                byte_range,
+                storage_metadata=storage.storage_metadata,
+
+                byte_range=byte_range,
             ),
 
             status_code=206,
@@ -267,87 +267,7 @@ class ViewerService:
             headers=headers,
         )
     
-
-    # async def stream_media(
-    #     self,
-    #     media_id,
-    #     request: Request
-    # ):
-    #     media = await self.media.get(
-    #         media_id
-    #     )
-
-    #     if media is None:
-    #         raise ValueError(
-    #             "Media not found"
-    #         )
-
-    #     storage = await (
-    #         self.storage.get_by_media_id(
-    #             media_id
-    #         )
-    #     )
-
-    #     if storage is None:
-    #         raise ValueError(
-    #             "Storage not found"
-    #         )
-        
-    #     extension = Path(
-    #         media.original_filename
-    #     ).suffix
-
-    #     cached_path = (
-    #         self.cache.get_cached_path(
-    #             storage.storage_key,
-    #             extension,
-    #         )
-    #     )
-
-    #     if not cached_path.exists():
-
-    #         self.storage_service.download_to_path(
-    #             storage.storage_metadata,
-    #             cached_path,
-    #         )
-
-    #     file_size = (
-    #         cached_path.stat().st_size
-    #     )
-
-    #     range_header = request.headers.get("range")
-
-    #     if range_header:
-
-    #         start, end = RangeStream.parse_range(
-    #             range_header,
-    #             file_size,
-    #         )
-
-    #         headers = {
-    #             "Accept-Ranges": "bytes",
-    #             "Content-Length": str(end - start + 1),
-    #             "Content-Range":
-    #                 f"bytes {start}-{end}/{file_size}",
-    #         }
-
-    #         return StreamingResponse(
-    #             RangeStream.stream(
-    #                 cached_path,
-    #                 start,
-    #                 end,
-    #             ),
-    #             status_code=206,
-    #             media_type=media.mime_type,
-    #             headers=headers,
-    #         )
-        
-    #     else: 
-    #         return FileResponse(
-    #             cached_path,
-    #             media_type=media.mime_type,
-    #         )
-        
+    
 
     async def get_thumbnail(
         self,

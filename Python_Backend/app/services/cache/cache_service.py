@@ -1,46 +1,46 @@
-from pathlib import Path
+# from pathlib import Path
 
-from app.services.cache.cache_utils import (
-    media_cache_path,
-)
+# from app.services.cache.cache_utils import (
+#     media_cache_path,
+# )
 
 
-class CacheService:
+# class CacheService:
 
-    def get_cached_path(
-        self,
-        storage_key: str,
-        extension: str,
-    ) -> Path:
+#     def get_cached_path(
+#         self,
+#         storage_key: str,
+#         extension: str,
+#     ) -> Path:
 
-        return media_cache_path(
-            storage_key,
-            extension,
-        )
+#         return media_cache_path(
+#             storage_key,
+#             extension,
+#         )
 
-    def exists(
-        self,
-        storage_key: str,
-        extension: str,
-    ) -> bool:
+#     def exists(
+#         self,
+#         storage_key: str,
+#         extension: str,
+#     ) -> bool:
 
-        return self.get_cached_path(
-            storage_key,
-            extension,
-        ).exists()
+#         return self.get_cached_path(
+#             storage_key,
+#             extension,
+#         ).exists()
 
-    def save(
-        self,
-        storage_key: str,
-        extension: str,
-        data: bytes,
-    ) -> Path:
+#     def save(
+#         self,
+#         storage_key: str,
+#         extension: str,
+#         data: bytes,
+#     ) -> Path:
 
-        path = self.get_cached_path(
-            storage_key,
-            extension,
-        )
+#         path = self.get_cached_path(
+#             storage_key,
+#             extension,
+#         )
 
-        path.write_bytes(data)
+#         path.write_bytes(data)
 
-        return path
+#         return path

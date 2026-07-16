@@ -15,6 +15,9 @@ from app.api.v1.thumbnails import router as thumbnails_router
 from app.providers.telegram.lifecycle import (
     TelegramLifecycle,
 )
+from app.services.cache.media_cache_manager import (
+    get_media_cache_manager
+)
 
 
 @asynccontextmanager
@@ -32,12 +35,26 @@ async def lifespan(app: FastAPI):
 
     telegram = TelegramLifecycle.instance()
 
+    #
+    # Force creation of the singleton cache manager.
+    #
+    # This creates cache directories,
+    # loads the in-memory index,
+    # and performs any startup cleanup.
+    #
+    cache = get_media_cache_manager()
+    cache.initialize()
+    await cache.start()
+
     try:
         telegram.start()
         yield
 
     finally:
         telegram.shutdown()
+
+        await cache.shutdown()
+        cache.cleanup()
 
 
 configure_logging()
