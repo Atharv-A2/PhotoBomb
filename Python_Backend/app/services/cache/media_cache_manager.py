@@ -3,7 +3,7 @@ from __future__ import annotations
 import hashlib
 import os
 import tempfile
-import time
+import time, json
 from pathlib import Path
 import logging
 from dataclasses import dataclass
@@ -323,44 +323,209 @@ class CacheIndex:
 
         self._current_size = 0
 
+        self._index_file = (
+            filesystem.video_dir
+            / "index.json"
+        )
+
+        self._dirty = False
+
+        self._TOUCH_INTERVAL = 30.0
+
     # ----------------------------------------------------------
     # Initialization
     # ----------------------------------------------------------
 
     def load(self) -> None:
         """
-        Build the cache index from the filesystem.
+        Load the cache index.
 
-        Called exactly once during startup.
+        Preference order:
+
+        1. Load persisted index.json
+        2. Fallback to filesystem scan
         """
 
         self._entries.clear()
 
         self._current_size = 0
 
-        for file in self._filesystem.list_cache():
+        #
+        # Try loading persisted index.
+        #
+        if self._load_index():
+            return
 
-            try:
+        #
+        # No valid index found.
+        #
+        self._load_from_filesystem()
 
-                stat = file.stat()
+        #
+        # Persist the rebuilt index.
+        #
+        self._dirty = True
 
-            except OSError:
+        self.flush()
+
+    def _load_index(self) -> bool:
+        """
+        Load cache metadata from index.json.
+
+        Returns True if successful.
+        Returns False if the index does not exist
+        or is invalid.
+        """
+
+        if not self._index_file.exists():
+            return False
+
+        try:
+
+            with self._index_file.open(
+                "r",
+                encoding="utf-8",
+            ) as f:
+
+                data = json.load(f)
+
+        except Exception:
+
+            return False
+
+        if data.get("version") != 1:
+            return False
+
+        entries = data.get("entries", {})
+
+        self._entries.clear()
+
+        self._current_size = 0
+
+        repaired = False
+
+        for key, item in entries.items():
+
+            path = Path(item["path"])
+
+            #
+            # Skip missing files.
+            #
+            if not path.exists():
+
+                repaired = True
+
                 continue
-
-            key = file.name
 
             entry = CacheEntry(
 
-                path=file,
+                path=path,
 
-                size=stat.st_size,
+                size=item["size"],
 
-                last_access=stat.st_atime,
+                last_access=item["last_access"],
             )
 
             self._entries[key] = entry
 
-            self._current_size += stat.st_size
+            self._current_size += entry.size
+
+        #
+        # If we repaired anything,
+        # save the cleaned index.
+        #
+        if repaired:
+
+            self._dirty = True
+
+            self.flush()
+
+        return True
+    
+
+    def _load_from_filesystem(self) -> None:
+        """
+        Rebuild the cache index by scanning the cache directory.
+        """
+
+        self._entries.clear()
+        self._current_size = 0
+
+        now = time.time()
+
+        for path in self._filesystem.list_cache():
+
+            # Ignore the persisted metadata file
+            if path.name == "index.json":
+                continue
+
+            try:
+                stat = path.stat()
+            except OSError:
+                continue
+
+            entry = CacheEntry(
+                path=path,
+                size=stat.st_size,
+                last_access=stat.st_mtime,  # or now
+            )
+
+            # The filename is the hashed storage key
+            key = path.name
+
+            self._entries[key] = entry
+            self._current_size += entry.size
+        
+        
+    def _save_index(self) -> None:
+        """
+        Write cache metadata atomically.
+        """
+
+        data = {
+
+            "version": 1,
+
+            "entries": {
+
+                key: {
+
+                    "path": str(entry.path),
+
+                    "size": entry.size,
+
+                    "last_access": entry.last_access,
+
+                }
+
+                for key, entry
+                in self._entries.items()
+
+            },
+
+        }
+
+        temp = self._index_file.with_suffix(
+            ".tmp"
+        )
+
+        with temp.open(
+            "w",
+            encoding="utf-8",
+        ) as f:
+
+            json.dump(
+
+                data,
+
+                f,
+
+                indent=2,
+            )
+
+        temp.replace(
+            self._index_file
+        )
 
     # ----------------------------------------------------------
     # Queries
@@ -375,7 +540,14 @@ class CacheIndex:
             storage_key
         )
 
-        return self._entries.get(key)
+        entry = self._entries.get(key)
+
+        if entry is None:
+            return None
+        
+        self._touch_entry(key, entry)
+
+        return self._entries[key]
 
     def contains(
         self,
@@ -435,6 +607,8 @@ class CacheIndex:
 
         self._current_size += entry.size
 
+        self._dirty = True
+
         return entry
 
     def remove(
@@ -445,6 +619,8 @@ class CacheIndex:
         key = self._filesystem.cache_filename(
             storage_key
         )
+
+        self._dirty = True
 
         self.remove_by_key(key)
 
@@ -457,23 +633,49 @@ class CacheIndex:
 
         if entry is None:
             return
-
+        
         self._current_size -= entry.size
 
-    def touch(
+        self._dirty = True
+
+    # def touch(
+    #     self,
+    #     storage_key: str,
+    # ) -> None:
+
+    #     key = self._filesystem.cache_filename(
+    #         storage_key
+    #     )
+
+    #     entry = self._entries.get(
+    #         key
+    #     )
+
+    #     if entry is None:
+    #         return
+
+    #     self._entries[key] = CacheEntry(
+
+    #         path=entry.path,
+
+    #         size=entry.size,
+
+    #         last_access=time.time(),
+    #     )
+
+
+    def _touch_entry(
         self,
-        storage_key: str,
-    ) -> None:
+        key: str,
+        entry: CacheEntry,
+    ):
 
-        key = self._filesystem.cache_filename(
-            storage_key
-        )
+        now = time.time()
 
-        entry = self._entries.get(
-            key
-        )
-
-        if entry is None:
+        #
+        # Prevent excessive metadata updates.
+        #
+        if now - entry.last_access < self._TOUCH_INTERVAL:
             return
 
         self._entries[key] = CacheEntry(
@@ -482,8 +684,10 @@ class CacheIndex:
 
             size=entry.size,
 
-            last_access=time.time(),
+            last_access=now,
         )
+
+        self._dirty = True
 
     # ----------------------------------------------------------
     # LRU
@@ -532,6 +736,20 @@ class CacheIndex:
             self._entries
         )
     
+    def flush(self) -> None:
+        """
+        Persist the in-memory cache index to disk.
+
+        Does nothing if nothing has changed.
+        """
+
+        if not self._dirty:
+            return
+
+        self._save_index()
+
+        self._dirty = False
+        
 
 from app.services.cache.cache_coordinator import (
     CacheCoordinator,
@@ -564,6 +782,7 @@ from app.db.enums.storage_provider_type import (
 from app.services.cache.cache_utils import (
     media_cache_path,
 )
+import asyncio
     
 
 class MediaCacheManager:
@@ -597,6 +816,8 @@ class MediaCacheManager:
             cache=self
         )
 
+        self._flush_task = None
+
 
     @property
     def coordinator(self):
@@ -614,8 +835,24 @@ class MediaCacheManager:
 
         await self._worker.start()
 
+        self._flush_task = asyncio.create_task(
+
+            self._flush_loop()
+        )
+
 
     async def shutdown(self):
+
+        if self._flush_task:
+
+            self._flush_task.cancel()
+
+            try:
+                await self._flush_task
+            except asyncio.CancelledError:
+                pass
+
+        self._index.flush()
 
         await self._worker.shutdown()
 
@@ -628,8 +865,12 @@ class MediaCacheManager:
 
         self._index.load()
 
+        self._index.flush()
+
 
     def cleanup(self):
+
+        self._index.flush()
 
         self._filesystem.cleanup_temp()
 
@@ -643,19 +884,27 @@ class MediaCacheManager:
             storage_key
         )
     
+    async def _flush_loop(self):
 
-    def touch(
-        self,
-        storage_key: str,
-    ):
+        while True:
 
-        self._filesystem.touch(
-            storage_key
-        )
+            await asyncio.sleep(60)
 
-        self._index.touch(
-            storage_key
-        )
+            self._index.flush()
+    
+
+    # def touch(
+    #     self,
+    #     storage_key: str,
+    # ):
+
+    #     self._filesystem.touch(
+    #         storage_key
+    #     )
+
+    #     self._index.touch(
+    #         storage_key
+    #     )
 
 
     def create_temp(self):
@@ -819,9 +1068,9 @@ class MediaCacheManager:
                 storage_key
             )
 
-        self.touch(
-            storage_key
-        )
+        # self.touch(
+        #     storage_key
+        # )
 
         with entry.path.open("rb") as file:
 
