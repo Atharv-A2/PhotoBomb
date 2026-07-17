@@ -1,10 +1,13 @@
 package com.example.photobomb.app.presentation.viewer
 
 import android.os.Bundle
-import android.util.Log
 import android.view.View
 import androidx.annotation.OptIn
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.updatePadding
 import androidx.lifecycle.lifecycleScope
 import com.example.photobomb.app.core.network.NetworkModule
 import com.example.photobomb.app.data.repository.ViewerRepository
@@ -16,11 +19,15 @@ import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
+import androidx.media3.ui.PlayerView
 import coil.load
 import com.example.photobomb.app.core.constants.ApiConstants
 import com.example.photobomb.app.core.image.ImageLoaderFactory
 import com.example.photobomb.app.core.media.MediaSourceFactory
-import com.example.photobomb.app.data.repository.StreamRepository
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 class ViewerActivity :
     AppCompatActivity() {
@@ -45,6 +52,8 @@ class ViewerActivity :
         super.onCreate(
             savedInstanceState
         )
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+        window.statusBarColor = android.graphics.Color.TRANSPARENT
 
         binding =
             ActivityViewerBinding.inflate(
@@ -53,6 +62,35 @@ class ViewerActivity :
 
         setContentView(
             binding.root
+        )
+        ViewCompat.setOnApplyWindowInsetsListener(binding.infoBar) { view, insets ->
+            val statusBarInsets = insets.getInsets(WindowInsetsCompat.Type.statusBars())
+
+            view.updatePadding(
+                top = statusBarInsets.top + 4
+            )
+
+            insets
+        }
+
+
+        binding.ivBack.setOnClickListener {
+            onBackPressedDispatcher.onBackPressed()
+        }
+
+        binding.infoBar.post {
+            binding.infoBar.translationY = 0f
+            binding.infoBar.alpha = 1f
+        }
+
+        binding.imageViewer.setOnClickListener {
+            toggleInfoBar()
+        }
+
+        binding.videoViewer.setControllerVisibilityListener(
+            PlayerView.ControllerVisibilityListener {
+                visibility -> setInfoBarVisible(visibility == View.VISIBLE)
+            }
         )
 
         val mediaId =
@@ -75,28 +113,6 @@ class ViewerActivity :
                 repository
             )
 
-        val streamRepo =
-            StreamRepository(
-                NetworkModule.streamApi(
-                    applicationContext
-                )
-            )
-
-//        lifecycleScope.launch {
-//
-//            val body =
-//                streamRepo.stream(
-//                    mediaId
-//                )
-//
-//            Log.d(
-//                "STREAM_TEST",
-//                body?.contentLength()
-//                    .toString()
-//            )
-//
-//        }
-
         lifecycleScope.launch {
 
             viewModel.uiState.collect {
@@ -104,6 +120,11 @@ class ViewerActivity :
                 val media =
                     it.media
                         ?: return@collect
+
+                val (date, time) = formatDateTime(media.capture_time.toString())
+
+                binding.tvDate.text = date
+                binding.tvTime.text = time
 
                 val streamUrl =
                     "${ApiConstants.BASE_URL}" +
@@ -195,6 +216,8 @@ class ViewerActivity :
 
                     player?.prepare()
 
+                    setInfoBarVisible(false)
+
                 }
 
             }
@@ -215,5 +238,40 @@ class ViewerActivity :
 
         super.onDestroy()
 
+    }
+
+    fun formatDateTime(input: String): Pair<String, String> {
+        val instant = Instant.parse(input)
+        val dateTime = instant.atZone(ZoneId.systemDefault())
+
+        val dateFormatter = DateTimeFormatter.ofPattern("dd MMMM yyyy", Locale.ENGLISH)
+        val timeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss")
+
+        val formattedDate = dateTime.format(dateFormatter)
+        val formattedTime = dateTime.format(timeFormatter)
+
+        return Pair(formattedDate, formattedTime)
+    }
+
+    private var isInfoBarVisible = true
+
+    private fun setInfoBarVisible(visible: Boolean) {
+        if (isInfoBarVisible == visible) return
+
+        isInfoBarVisible = visible
+
+        binding.infoBar.animate()
+            .translationY(
+                if (visible) 0f else -binding.infoBar.height.toFloat()
+            )
+            .alpha(
+                if (visible) 1f else 0f
+            )
+            .setDuration(250)
+            .start()
+    }
+
+    private fun toggleInfoBar() {
+        setInfoBarVisible(!isInfoBarVisible)
     }
 }
