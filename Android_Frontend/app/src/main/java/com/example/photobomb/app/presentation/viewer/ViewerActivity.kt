@@ -2,6 +2,7 @@ package com.example.photobomb.app.presentation.viewer
 
 import android.os.Bundle
 import android.view.View
+import android.widget.Toast
 import androidx.annotation.OptIn
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
@@ -9,10 +10,6 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updatePadding
 import androidx.lifecycle.lifecycleScope
-import com.example.photobomb.app.core.network.NetworkModule
-import com.example.photobomb.app.data.repository.ViewerRepository
-import com.example.photobomb.databinding.ActivityViewerBinding
-import kotlinx.coroutines.launch
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
@@ -24,6 +21,10 @@ import coil.load
 import com.example.photobomb.app.core.constants.ApiConstants
 import com.example.photobomb.app.core.image.ImageLoaderFactory
 import com.example.photobomb.app.core.media.MediaSourceFactory
+import com.example.photobomb.app.core.network.NetworkModule
+import com.example.photobomb.app.data.repository.ViewerRepository
+import com.example.photobomb.databinding.ActivityViewerBinding
+import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -105,13 +106,18 @@ class ViewerActivity :
 
         val repository =
             ViewerRepository(
-                api
+                api,
+                applicationContext
             )
 
         val viewModel =
             ViewerViewModel(
                 repository
             )
+
+        binding.btnDownload.setOnClickListener {
+            viewModel.download(mediaId)
+        }
 
         lifecycleScope.launch {
 
@@ -222,6 +228,48 @@ class ViewerActivity :
 
             }
 
+        }
+
+        lifecycleScope.launch {
+
+            viewModel.downloadState.collect { state ->
+
+                when (state) {
+
+                    is DownloadState.Idle -> {}
+
+                    is DownloadState.Progress -> {
+
+//                        binding.progressBar.isIndeterminate = false
+//
+//                        binding.progressBar.progress =
+//                            state.percent
+//
+//                        binding.tvProgress.text =
+//                            "${state.percent}%"
+                    }
+
+                    is DownloadState.Success -> {
+
+//                        binding.progressBar.progress = 100
+
+                        Toast.makeText(
+                            this@ViewerActivity,
+                            "Downloaded",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+
+                    is DownloadState.Error -> {
+
+                        Toast.makeText(
+                            this@ViewerActivity,
+                            state.message,
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                }
+            }
         }
 
         viewModel.load(

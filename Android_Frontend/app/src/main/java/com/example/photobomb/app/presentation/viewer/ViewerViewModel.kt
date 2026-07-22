@@ -23,6 +23,14 @@ class ViewerViewModel(
             StateFlow<ViewerUiState> =
         _uiState.asStateFlow()
 
+    private val _downloadState =
+        MutableStateFlow<DownloadState>(
+            DownloadState.Idle
+        )
+
+    val downloadState =
+        _downloadState.asStateFlow()
+
     fun load(
         mediaId: String
     ) {
@@ -75,4 +83,20 @@ class ViewerViewModel(
 
         }
 
-    }}
+    }
+
+    fun download(
+        mediaId: String
+    ) {
+
+        viewModelScope.launch {
+
+            repository.downloadFile(
+                mediaId
+            ).collect {
+
+                _downloadState.value = it
+            }
+        }
+    }
+}
