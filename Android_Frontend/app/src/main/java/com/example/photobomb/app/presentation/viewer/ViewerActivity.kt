@@ -22,6 +22,8 @@ import com.example.photobomb.app.core.constants.ApiConstants
 import com.example.photobomb.app.core.image.ImageLoaderFactory
 import com.example.photobomb.app.core.media.MediaSourceFactory
 import com.example.photobomb.app.core.network.NetworkModule
+import com.example.photobomb.app.data.datastore.AuthPreferences
+import com.example.photobomb.app.data.dto.viewer.MediaDetailResponse
 import com.example.photobomb.app.data.repository.ViewerRepository
 import com.example.photobomb.databinding.ActivityViewerBinding
 import kotlinx.coroutines.launch
@@ -38,6 +40,8 @@ class ViewerActivity :
         const val EXTRA_MEDIA_ID =
             "media_id"
     }
+
+    private var currentMedia: MediaDetailResponse? = null
 
     private lateinit var binding:
             ActivityViewerBinding
@@ -104,10 +108,16 @@ class ViewerActivity :
                 applicationContext
             )
 
+        val authPreferences =
+            AuthPreferences(
+                applicationContext
+            )
+
         val repository =
             ViewerRepository(
                 api,
-                applicationContext
+                applicationContext,
+                authPreferences
             )
 
         val viewModel =
@@ -116,7 +126,19 @@ class ViewerActivity :
             )
 
         binding.btnDownload.setOnClickListener {
-            viewModel.download(mediaId)
+
+            currentMedia?.let { media ->
+
+                viewModel.download(
+                    media
+                )
+
+                Toast.makeText(
+                    this,
+                    "Downloading...",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
         }
 
         lifecycleScope.launch {
@@ -126,6 +148,8 @@ class ViewerActivity :
                 val media =
                     it.media
                         ?: return@collect
+
+                currentMedia = media
 
                 val (date, time) = formatDateTime(media.capture_time.toString())
 
@@ -232,27 +256,11 @@ class ViewerActivity :
 
         lifecycleScope.launch {
 
-            viewModel.downloadState.collect { state ->
+            viewModel.downloadComplete.collect { completed ->
 
-                when (state) {
+                when (completed) {
 
-                    is DownloadState.Idle -> {}
-
-                    is DownloadState.Progress -> {
-
-//                        binding.progressBar.isIndeterminate = false
-//
-//                        binding.progressBar.progress =
-//                            state.percent
-//
-//                        binding.tvProgress.text =
-//                            "${state.percent}%"
-                    }
-
-                    is DownloadState.Success -> {
-
-//                        binding.progressBar.progress = 100
-
+                    true -> {
                         Toast.makeText(
                             this@ViewerActivity,
                             "Downloaded",
@@ -260,14 +268,15 @@ class ViewerActivity :
                         ).show()
                     }
 
-                    is DownloadState.Error -> {
-
+                    false -> {
                         Toast.makeText(
                             this@ViewerActivity,
-                            state.message,
+                            "Download failed",
                             Toast.LENGTH_SHORT
                         ).show()
                     }
+
+                    null -> {}
                 }
             }
         }

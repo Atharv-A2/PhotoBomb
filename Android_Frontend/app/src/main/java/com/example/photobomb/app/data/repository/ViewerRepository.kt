@@ -1,21 +1,22 @@
 package com.example.photobomb.app.data.repository
 
-import android.content.ContentValues
+import android.app.DownloadManager
 import android.content.Context
+import android.net.Uri
 import android.os.Environment
-import android.provider.MediaStore
+import com.example.photobomb.app.core.constants.ApiConstants
 import com.example.photobomb.app.data.api.ViewerApi
-import com.example.photobomb.app.presentation.viewer.DownloadState
+import com.example.photobomb.app.data.datastore.AuthPreferences
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.flowOn
-import java.io.IOException
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.withContext
 
 class ViewerRepository(
 
     private val api: ViewerApi,
-    private val context: Context
+    private val context: Context,
+    private val authPreferences: AuthPreferences,
 
 ) {
 
@@ -24,102 +25,100 @@ class ViewerRepository(
     ) =
         api.getMedia(id)
 
+    suspend fun downloadFile(
+        mediaId: String,
+        fileName: String,
+        mimeType: String
+    ): Long {
 
-    fun downloadFile(
-        mediaId: String
-    ): Flow<DownloadState> = flow {
+        val url =
+            "${ApiConstants.BASE_URL}" +
+                    "api/v1/media/" +
+                    mediaId +
+                    "/download"
 
-        val response = api.downloadMedia(mediaId)
+        val token = getAccessToken()
+            ?: throw IllegalStateException("No access token")
 
-        if (!response.isSuccessful) {
-            throw IOException("Download failed")
-        }
+        val request =
+            DownloadManager.Request(
+                Uri.parse(url)
+            )
+                .setTitle(fileName)
+                .setDescription("Downloading media")
+                .setMimeType(mimeType)
+                .setNotificationVisibility(
+                    DownloadManager.Request
+                        .VISIBILITY_VISIBLE_NOTIFY_COMPLETED
+                )
+                .setDestinationInExternalPublicDir(
+                    Environment.DIRECTORY_DOWNLOADS,
+                    "PhotoBomb/$fileName"
+                )
 
-        val body = response.body() ?: throw IOException("Empty body")
+        request.addRequestHeader(
+            "Authorization",
+            "Bearer $token"
+        )
 
-        val mimeType = response.body()?.contentType()?.toString()
-            ?: response.headers()["Content-Type"]
-            ?: "application/octet-stream"
+        val manager =
+            context.getSystemService(
+                Context.DOWNLOAD_SERVICE
+            ) as DownloadManager
 
-        val total =
-            response.headers()["Content-Length"]?.toLongOrNull()
-                ?: body.contentLength()
 
-        val contentDisposition = response.headers()["Content-Disposition"]
-
-        val displayName =
-            extractFileName(contentDisposition)
-                ?: "download"
-
-        val resolver = context.contentResolver
-
-        val isVideo = mimeType.startsWith("video")
-
-        val relativePath =
-            if (isVideo) {
-                Environment.DIRECTORY_MOVIES + "/PhotoBomb"
-            } else {
-                Environment.DIRECTORY_PICTURES + "/PhotoBomb"
-            }
-
-        val values = ContentValues().apply {
-            put(MediaStore.MediaColumns.DISPLAY_NAME, displayName)
-            put(MediaStore.MediaColumns.MIME_TYPE, mimeType)
-            put(MediaStore.MediaColumns.RELATIVE_PATH, relativePath)
-            put(MediaStore.MediaColumns.IS_PENDING, 1)
-        }
-
-        val collection =
-            if (mimeType.startsWith("video")) {
-                MediaStore.Video.Media.EXTERNAL_CONTENT_URI
-            } else {
-                MediaStore.Images.Media.EXTERNAL_CONTENT_URI
-            }
-
-        val uri = resolver.insert(collection, values)
-            ?: throw IOException("Unable to create MediaStore entry")
-
-        resolver.openOutputStream(uri)?.use { output ->
-
-            body.byteStream().use { input ->
-
-                val buffer = ByteArray(8192)
-
-                var downloaded = 0L
-
-                while (true) {
-                    val read = input.read(buffer)
-                    if (read == -1) break
-
-                    output.write(buffer, 0, read)
-
-                    downloaded += read
-
-                    emit(
-                        DownloadState.Progress(
-                            downloaded,
-                            total,
-                            ((downloaded * 100) / total).toInt()
-                        )
-                    )
-                }
-            }
-        }
-
-        values.clear()
-        values.put(MediaStore.MediaColumns.IS_PENDING, 0)
-        resolver.update(uri, values, null, null)
-
-        emit(DownloadState.Success(uri))
+        return manager.enqueue(request)
     }
-        .flowOn(Dispatchers.IO)
 
-    private fun extractFileName(header: String?): String? {
-        if (header == null) return null
+    suspend fun getAccessToken():
+            String? {
 
-        val regex = Regex("""filename="?([^"]+)"?""")
-        return regex.find(header)
-            ?.groupValues
-            ?.getOrNull(1)
+        return authPreferences
+            .getAccessToken()
+    }
+
+    suspend fun waitForDownloadCompletion(
+        downloadId: Long
+    ): Boolean = withContext(Dispatchers.IO) {
+
+        val manager =
+            context.getSystemService(
+                Context.DOWNLOAD_SERVICE
+            ) as DownloadManager
+
+        while (isActive) {
+
+            val status =
+                manager.query(
+                    DownloadManager.Query()
+                        .setFilterById(downloadId)
+                ).use { cursor ->
+
+                    if (cursor.moveToFirst()) {
+
+                        cursor.getInt(
+                            cursor.getColumnIndexOrThrow(
+                                DownloadManager.COLUMN_STATUS
+                            )
+                        )
+
+                    } else {
+                        null
+                    }
+                }
+
+            when (status) {
+
+                DownloadManager.STATUS_SUCCESSFUL ->
+                    return@withContext true
+
+                DownloadManager.STATUS_FAILED ->
+                    return@withContext false
+            }
+
+            delay(500)
+        }
+
+        false
     }
 }

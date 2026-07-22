@@ -10,6 +10,8 @@ data class MediaDetailResponse(
 
     val file_size: Long,
 
+    val mime_type: String,
+
     val width: Int?,
 
     val height: Int?,

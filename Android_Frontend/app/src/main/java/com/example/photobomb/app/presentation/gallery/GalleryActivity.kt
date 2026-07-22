@@ -92,6 +92,8 @@ class GalleryActivity : AppCompatActivity() {
     ) {
         super.onCreate(savedInstanceState)
 
+        window.statusBarColor = android.graphics.Color.TRANSPARENT
+
         binding =
             ActivityGalleryBinding.inflate(
                 layoutInflater
