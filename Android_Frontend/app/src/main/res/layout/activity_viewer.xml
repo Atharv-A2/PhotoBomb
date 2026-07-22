@@ -7,12 +7,12 @@
     android:layout_height="match_parent"
     android:background="@android:color/black">
 
-    <ImageView
+    <com.github.chrisbanes.photoview.PhotoView
         android:id="@+id/imageViewer"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:visibility="gone"
-        android:scaleType="fitCenter"/>
+        android:background="@android:color/black" />
 
     <androidx.media3.ui.PlayerView
         android:id="@+id/videoViewer"
