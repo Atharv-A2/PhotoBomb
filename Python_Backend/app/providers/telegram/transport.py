@@ -95,6 +95,21 @@ class TelegramTransport:
             )
         )
     
+    async def download(
+        self,
+        media: TelegramMedia,
+    ) -> AsyncGenerator[bytes, None]:
+        
+        logger.info(
+            "Opening Download stream %s",
+            media.message_id,
+        )
+
+        async for chunk in self._consume_generator(
+            lambda: self._operations.download(media)
+        ):
+            yield chunk
+    
 
     def delete(
         self,
@@ -110,32 +125,6 @@ class TelegramTransport:
 
             self._operations.delete(
                 media
-            )
-        )
-
-
-    def open_stream(
-        self,
-        media: TelegramMedia,
-        byte_range: TelegramRange,
-    ) -> TelegramStreamHandle:
-
-        logger.info(
-
-            "Opening stream %s",
-
-            media.message_id,
-        )
-
-        return self._worker.submit_generator(
-
-            lambda:
-
-            self._operations.open_stream(
-
-                media,
-
-                byte_range,
             )
         )
     
@@ -174,37 +163,18 @@ class TelegramTransport:
         self,
         media: TelegramMedia,
         byte_range: TelegramRange,
-    ) -> AsyncGenerator[
-        bytes,
-        None,
-    ]:
-
-        handle = await self._await_sync(
-            self.open_stream,
-            media,
-            byte_range,
+    ) -> AsyncGenerator[bytes, None]:
+        
+        logger.info(
+            "Opening stream %s",
+            media.message_id,
         )
+        
+        async for chunk in self._consume_generator(
+            lambda: self._operations.open_stream(media, byte_range)
+        ):
+            yield chunk
 
-        try:
-
-            while True:
-
-                chunk = await self._await_sync(
-                    self.read_stream,
-                    handle,
-                )
-
-                if chunk is None:
-                    break
-
-                yield chunk
-
-        finally:
-
-            await self._await_sync(
-                self.close_stream,
-                handle,
-            )
 
     async def _await_sync(
         self,
@@ -219,3 +189,29 @@ class TelegramTransport:
             func,
             *args,
         )
+    
+
+    async def _consume_generator(self, factory):
+
+        handle = await self._await_sync(
+            self._worker.submit_generator,
+            factory,
+        )
+
+        try:
+            while True:
+                chunk = await self._await_sync(
+                    self.read_stream,
+                    handle,
+                )
+
+                if chunk is None:
+                    break
+
+                yield chunk
+
+        finally:
+            await self._await_sync(
+                self.close_stream,
+                handle,
+            )

@@ -10,6 +10,9 @@ from app.providers.telegram.mapper import (
 from app.providers.telegram.models import (
     TelegramRange,
 )
+from app.providers.telegram.models import (
+    TelegramMedia
+)
 
 from app.providers.telegram.transport import (
     TelegramTransport,
@@ -137,5 +140,21 @@ class TelegramProvider(
         )
 
         self.transport.delete(
+            media
+        )
+
+
+    def download_file(
+        self,
+        storage_metadata,
+    ):
+        
+        media = (
+            TelegramMapper.from_storage(
+                storage_metadata
+            )
+        )
+
+        return self.transport.download(
             media
         )

@@ -41,6 +41,9 @@ from app.services.media.gallery_service import (
 from app.services.media.viewer_service import (
     ViewerService,
 )
+from app.services.download.download_service import (
+    DownloadService,
+)
 
 router = APIRouter(
     prefix="/media",
@@ -297,6 +300,23 @@ async def get_status(
 
     return await (
         service.get_status(
+            media_id
+        )
+    )
+
+
+@router.get(
+    "/{media_id}/download"
+)
+async def download_media(
+    media_id: UUID,
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db),
+):
+    service = DownloadService(session)
+
+    return await (
+        service.download_media(
             media_id
         )
     )

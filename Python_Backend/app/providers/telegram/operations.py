@@ -237,6 +237,29 @@ class TelegramOperations:
             raise self._map_exception(
                 exc
             ) from exc
+
+
+    async def download(
+        self,
+        media: TelegramMedia,
+    ):
+        await self._worker.ensure_connected()
+
+        message = await self._resolve_message(media)
+
+        try:
+
+            async for chunk in self._worker.client.iter_download(
+                message,
+                request_size=1024 * 1024,
+            ):
+                yield chunk
+                
+        except Exception as exc:
+
+            raise self._map_exception(
+                exc
+            ) from exc
         
 
     async def delete(

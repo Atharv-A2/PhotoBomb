@@ -12,6 +12,8 @@ from app.services.storage.provider_registry import (
     StorageProviderRegistry,
 )
 
+from app.db.models.media_storage import MediaStorage
+
 class StorageService:
 
     def __init__(self):
@@ -51,24 +53,11 @@ class StorageService:
             storage_metadata,
         )
 
-    # async def stream_file(
-    #     self,
-    #     storage_key: str,
-    #     storage_metadata,
-    #     byte_range,
-    # ):
+    def download_file(
+        self,
+        storage_metadata,
+    ):
 
-    #     # storage_key = storage_metadata[
-    #     #     "storage_key"
-    #     # ]
-
-    #     async for chunk in self.cache.stream(
-
-    #         storage_key=storage_key,
-
-    #         storage_metadata = storage_metadata,
-
-    #         byte_range=byte_range,
-    #     ):
-
-    #         yield chunk
+        return self.provider.download_file(
+            storage_metadata
+        )

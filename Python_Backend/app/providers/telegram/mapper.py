@@ -49,25 +49,31 @@ class TelegramMapper:
         stored provider metadata.
         """
 
-        return TelegramMedia(
+        try: 
+            return TelegramMedia(
 
-            chat_id=int(
-                metadata["chat_id"]
-            ),
+                chat_id=int(
+                    metadata["chat_id"]
+                ),
 
-            message_id=int(
-                metadata["message_id"]
-            ),
+                message_id=int(
+                    metadata["message_id"]
+                ),
 
-            file_size=int(
-                metadata["file_size"]
-            ),
+                file_size=int(
+                    metadata["file_size"]
+                ),
 
-            mime_type=metadata.get(
-                "mime_type"
-            ),
+                mime_type=metadata.get(
+                    "mime_type"
+                ),
 
-            filename=metadata.get(
-                "filename"
-            ),
-        )
+                filename=metadata.get(
+                    "filename"
+                ),
+            )
+        
+        except KeyError as exc:
+            raise ValueError(
+                f"Missing Telegram storage metadata: {exc}"
+            )

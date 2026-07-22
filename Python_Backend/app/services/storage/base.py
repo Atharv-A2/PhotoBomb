@@ -51,4 +51,10 @@ class StorageProvider(
     ):
         pass
 
-    
+
+    @abstractmethod
+    def download_file(
+        self,
+        storage_metadata,
+    ):
+        pass
