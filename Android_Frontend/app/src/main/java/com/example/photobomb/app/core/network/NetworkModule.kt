@@ -1,14 +1,10 @@
 package com.example.photobomb.app.core.network
 
-import AuthInterceptor
 import android.content.Context
 import com.example.photobomb.app.core.constants.ApiConstants
 import com.example.photobomb.app.data.api.AuthApi
 import com.example.photobomb.app.data.api.GalleryApi
-import com.example.photobomb.app.data.api.StreamApi
 import com.example.photobomb.app.data.api.ViewerApi
-import com.example.photobomb.app.data.datastore.AuthPreferences
-import com.example.photobomb.app.data.repository.AuthRepository
 import com.example.photobomb.app.upload.api.UploadApi
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
@@ -39,14 +35,6 @@ object NetworkModule {
         return NetworkClient
             .getRetrofit(context)
             .create(ViewerApi::class.java)
-    }
-
-    fun streamApi(
-        context: Context
-    ): StreamApi {
-        return NetworkClient
-            .getRetrofit(context)
-            .create(StreamApi::class.java)
     }
 
     fun uploadApi(
