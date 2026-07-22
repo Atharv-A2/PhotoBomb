@@ -1,8 +1,6 @@
 package com.example.photobomb.app.presentation.gallery
 
 import android.os.Bundle
-import android.util.Log
-import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
@@ -119,17 +117,22 @@ class GalleryActivity : AppCompatActivity() {
                 )
             }
 
-        binding.recyclerGallery.apply {
+        binding.recyclerGallery.layoutManager =
+            GridLayoutManager(this, 3).apply {
 
-            layoutManager =
-                GridLayoutManager(
-                    this@GalleryActivity,
-                    3
-                )
+                spanSizeLookup = object : GridLayoutManager.SpanSizeLookup() {
 
-            adapter =
-                this@GalleryActivity.adapter
-        }
+                    override fun getSpanSize(position: Int): Int {
+
+                        return when (adapter.peek(position)) {
+                            is GalleryUiModel.Header -> spanCount
+                            else -> 1
+                        }
+                    }
+                }
+            }
+
+        binding.recyclerGallery.adapter = adapter
 
         binding.uploadSummaryView.root.setOnClickListener {
 

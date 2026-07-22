@@ -5,6 +5,7 @@ import androidx.paging.PagingSource
 import androidx.paging.PagingState
 import com.example.photobomb.app.data.api.GalleryApi
 import com.example.photobomb.app.presentation.gallery.GalleryItemUiModel
+import java.time.Instant
 
 class GalleryPagingSource(
 
@@ -60,7 +61,10 @@ class GalleryPagingSource(
                             it.thumbnail_id,
 
                         mediaType =
-                            it.media_type
+                            it.media_type,
+
+                        captureTime =
+                            it.capture_time?.let(Instant::parse)
                     )
                 }
 
